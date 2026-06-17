@@ -1,0 +1,12 @@
+/* App.css - Global styles */
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Optional: Add any custom styles here that don't fit Tailwind */
