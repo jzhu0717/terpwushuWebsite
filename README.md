@@ -1,3 +1,16 @@
+# Terpwushu website
+This is the repository for Terpwushu club's website (updated 2026 by Josh Zhu). 
+
+As of right now, almost everything is set up - I need to figure out hosting (trying to move to cloud hosting), admin page, as well as the UWG stuff. so basically most the backend work lmao.
+
+The sourcecode for the webpages are in /src. Images are all in /public (TODO: sort that folder).
+
+I will write more later. Trust, I will write a lot so that the documentation will be straightforward enough for future terpwushu ppl to (hopefully) understand what's going on.
+
+i suck at frontend stuff lol
+
+Below is the default readme for what it built the frontend with - react + vite.
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
