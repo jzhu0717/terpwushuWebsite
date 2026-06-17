@@ -1,4 +1,54 @@
+import { useState, useEffect, useRef } from "react";
+
+const SLIDESHOW_IMAGES = [
+	"/training/training.jpg",
+	"/training/robertjian.jpg",
+	"/training/blin.JPG",
+	"/training/aaronnangun.jpg",
+	"/training/biggao.jpg",
+	"/training/carolyn.jpg",
+	"/training/williamtjjian.jpg",
+	"/training/aaronnq.jpg",
+];
+
 export default function Training() {
+	const [currentIndex, setCurrentIndex] = useState(0);
+	  const timeoutRef = useRef(null);
+	
+	  const resetTimeout = () => {
+		if (timeoutRef.current) {
+		  clearTimeout(timeoutRef.current);
+		}
+	  };
+	
+	  useEffect(() => {
+		if (SLIDESHOW_IMAGES.length <= 1) return;
+	
+		timeoutRef.current = setTimeout(
+		  () =>
+			setCurrentIndex((prevIndex) =>
+			  prevIndex === SLIDESHOW_IMAGES.length - 1 ? 0 : prevIndex + 1
+			),
+		  2500 // Slides change every 2.5 seconds
+		);
+	
+		return () => {
+		  resetTimeout();
+		};
+	  }, [currentIndex]);
+	
+	  const prevSlide = () => {
+		const isFirstSlide = currentIndex === 0;
+		const newIndex = isFirstSlide ? SLIDESHOW_IMAGES.length - 1 : currentIndex - 1;
+		setCurrentIndex(newIndex);
+	  };
+	
+	  const nextSlide = () => {
+		const isLastSlide = currentIndex === SLIDESHOW_IMAGES.length - 1;
+		const newIndex = isLastSlide ? 0 : currentIndex + 1;
+		setCurrentIndex(newIndex);
+	  };
+	
 	return (
 		<div
 			className="min-h-screen"
@@ -22,46 +72,154 @@ export default function Training() {
 				</span>
 			</div>
 
-			{/* Hero slideshow placeholder */}
+			{/* image slideshow */}
 			<div className="flex justify-center px-4 pb-0">
-				<div
-				style={{
-					width: "100%",
-					maxWidth: "860px",
-					aspectRatio: "16 / 7",
-					background: "rgba(139, 26, 26, 0.08)",
-					border: "1.5px dashed #C0392B",
-					borderRadius: "12px",
-					display: "flex",
-					flexDirection: "column",
-					alignItems: "center",
-					justifyContent: "center",
-					gap: "8px",
-					color: "#9B3333",
-				}}
-				>
-				<svg
-					width="40"
-					height="40"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					strokeWidth="1.5"
-					strokeLinecap="round"
-					strokeLinejoin="round"
-					aria-hidden="true"
-				>
-					<rect x="2" y="2" width="20" height="20" rx="3" />
-					<polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none" />
-				</svg>
-				<span style={{ fontSize: "13px", fontWeight: 500 }}>
-					Image / Video Slideshow
-				</span>
-				<span style={{ fontSize: "11px", opacity: 0.7 }}>
-					placeholder for now
-				</span>
-				</div>
-			</div>
+        <div
+          style={{
+            width: "100%",
+            maxWidth: "860px",
+            aspectRatio: "16 / 7",
+            background: "rgba(139, 26, 26, 0.08)",
+            border: "1px solid rgba(192, 57, 43, 0.2)",
+            borderRadius: "12px",
+            overflow: "hidden", 
+            position: "relative",
+          }}
+          className="group" // Adds tailwind group class for hover elements if desired
+        >
+          {SLIDESHOW_IMAGES.length > 0 ? (
+            <>
+              {/* Image Track (Handles the sliding mechanism) */}
+              <div
+                style={{
+                  display: "flex",
+                  width: "100%",
+                  height: "100%",
+                  transform: `translateX(-${currentIndex * 100}%)`,
+                  transition: "transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
+                }}
+              >
+                {SLIDESHOW_IMAGES.map((src, index) => (
+                  <div
+                    key={src}
+                    style={{
+                      minWidth: "100%",
+                      height: "100%",
+                    }}
+                  >
+                    <img
+                      src={src}
+                      alt={`Wushu slide ${index + 1}`}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Left Arrow Button */}
+              <button
+                onClick={prevSlide}
+                style={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "16px",
+                  transform: "translateY(-50%)",
+                  background: "rgba(0, 0, 0, 0.3)",
+                  backdropFilter: "blur(4px)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: "40px",
+                  height: "40px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  transition: "background 0.2s, opacity 0.2s",
+                }}
+                className="opacity-70 hover:opacity-100 hover:bg-black/50"
+                aria-label="Previous slide"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+              </button>
+
+              {/* Right Arrow Button */}
+              <button
+                onClick={nextSlide}
+                style={{
+                  position: "absolute",
+                  top: "50%",
+                  right: "16px",
+                  transform: "translateY(-50%)",
+                  background: "rgba(0, 0, 0, 0.3)",
+                  backdropFilter: "blur(4px)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: "40px",
+                  height: "40px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  transition: "background 0.2s, opacity 0.2s",
+                }}
+                className="opacity-70 hover:opacity-100 hover:bg-black/50"
+                aria-label="Next slide"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+
+              {/* Bottom Navigation Dots */}
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: "16px",
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  display: "flex",
+                  gap: "8px",
+                  background: "rgba(0, 0, 0, 0.2)",
+                  padding: "6px 12px",
+                  borderRadius: "20px",
+                  backdropFilter: "blur(4px)",
+                }}
+              >
+                {SLIDESHOW_IMAGES.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentIndex(index)}
+                    style={{
+                      width: "8px",
+                      height: "8px",
+                      borderRadius: "50%",
+                      border: "none",
+                      padding: 0,
+                      cursor: "pointer",
+                      background: currentIndex === index ? "#fff" : "rgba(255, 255, 255, 0.4)",
+                      transition: "all 0.3s ease",
+                      transform: currentIndex === index ? "scale(1.2)" : "scale(1)",
+                    }}
+                    aria-label={`Go to slide ${index + 1}`}
+                  />
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center justify-center h-full text-red-700">
+              No images found. Add paths to SLIDESHOW_IMAGES.
+            </div>
+          )}
+        </div>
+      </div>
 
 			{/* Main content */}
 			<div

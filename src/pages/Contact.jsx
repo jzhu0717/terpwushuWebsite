@@ -102,46 +102,32 @@ export default function Contact() {
 				</span>
 			</div>
 
-			{/* Hero slideshow placeholder */}
 			<div className="flex justify-center px-4 pb-0">
-				<div
-				style={{
-					width: "100%",
-					maxWidth: "860px",
-					aspectRatio: "16 / 7",
-					background: "rgba(139, 26, 26, 0.08)",
-					border: "1.5px dashed #C0392B",
-					borderRadius: "12px",
-					display: "flex",
-					flexDirection: "column",
-					alignItems: "center",
-					justifyContent: "center",
-					gap: "8px",
-					color: "#9B3333",
-				}}
-				>
-				<svg
-					width="40"
-					height="40"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					strokeWidth="1.5"
-					strokeLinecap="round"
-					strokeLinejoin="round"
-					aria-hidden="true"
-				>
-					<rect x="2" y="2" width="20" height="20" rx="3" />
-					<polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none" />
-				</svg>
-				<span style={{ fontSize: "13px", fontWeight: 500 }}>
-					Image / Video Slideshow
-				</span>
-				<span style={{ fontSize: "11px", opacity: 0.7 }}>
-					placeholder for now
-				</span>
-				</div>
-			</div>
+                <div
+                    style={{
+                    width: "100%",
+                    maxWidth: "860px",
+                    aspectRatio: "16 / 7",
+                    border: "1px solid rgba(192, 57, 43, 0.2)", 
+                    borderRadius: "12px",
+                    overflow: "hidden", 
+                    position: "relative",
+                    }}
+                >
+                    <img
+                    src="/contact/spearfishing.jpg" 
+                    alt="Contact Us!"
+                    style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover", 
+                        objectPosition: "center", 
+                    }}
+                    />
+                </div>
+                </div>
+
+
 			{/* Main content */}
 			<div
 				className="flex flex-col items-center px-4 py-12"
