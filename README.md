@@ -1,3 +1,10 @@
+# Terpwushu website
+This is the repository for Terpwushu club's website (updated 2026 by Josh Zhu). 
+
+I will write more later.
+
+Below is the default readme for what it built the frontend with - react + vite.
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
