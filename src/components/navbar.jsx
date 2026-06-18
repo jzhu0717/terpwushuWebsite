@@ -21,7 +21,7 @@ export default function Navbar() {
       }}
     >
       <div className="container mx-auto grid grid-cols-3 items-center">
-        <Link to="/" className="flex items-center w-fit">
+        <Link to="/#" className="flex items-center w-fit">
           <img src="/TWLOGOWHITE.png" alt="TW Logo" className="h-10" />
           <span style={{ fontFamily: "'Arial Black', sans-serif", fontWeight: 200, color: '#dee0df' }}>terpwushu</span>
         </Link>
@@ -30,7 +30,8 @@ export default function Navbar() {
             borderRadius: '999px',
             padding: scrolled ? '6px 18px' : '0',
             transition: 'all 0.3s', }}>
-          <li><Link to="/">Home</Link></li>
+          <li><Link to="/#">Home</Link></li>
+          <li><Link to="/#about">About</Link></li>
           <li><Link to="/joining">Joining</Link></li>
           <li><Link to="/training">Training</Link></li>
           <li><Link to="/officers">Officers</Link></li>
@@ -39,16 +40,16 @@ export default function Navbar() {
         </ul>
         <div className="flex gap-4 justify-end">
           <a href="https://www.facebook.com/terpwushu" target="_blank" rel="noopener noreferrer">
-            <img src="/fb.webp" alt="Facebook" className="h-6" />
+            <img src="/socials/fb.webp" alt="Facebook" className="h-6" />
           </a>
           <a href="https://www.instagram.com/terpwushu/" target="_blank" rel="noopener noreferrer">
-            <img src="/ig.webp" alt="Instagram" className="h-6" />
+            <img src="/socials/ig.webp" alt="Instagram" className="h-6" />
           </a>
           <a href="https://www.youtube.com/user/terpwushuviewer" target="_blank" rel="noopener noreferrer">
-            <img src="/yt.webp" alt="YouTube" className="h-6" />
+            <img src="/socials/yt.webp" alt="YouTube" className="h-6" />
           </a>
           <a href="https://www.tiktok.com/@terpwushu" target="_blank" rel="noopener noreferrer">
-            <img src="/tt.webp" alt="TikTok" className="h-6" />
+            <img src="/socials/tt.webp" alt="TikTok" className="h-6" />
           </a>
         </div>
       </div>

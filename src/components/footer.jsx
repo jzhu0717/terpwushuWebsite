@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 export default function Footer() {
   return (
     <footer className="bg-gray-800 text-white p-4 mt-12">
@@ -17,8 +19,7 @@ export default function Footer() {
           </p>
         </div>
         <div className="flex flex-col text-sm">
-          <span>these will be links soon</span>
-          <span>Admin Panel</span>
+          <li><Link to="/admin/#">Admin Panel</Link></li>
           <span>UWG Panel</span>
         </div>
       </div>

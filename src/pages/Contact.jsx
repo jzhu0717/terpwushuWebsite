@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import emailjs from '@emailjs/browser';
 import ReCAPTCHA from 'react-google-recaptcha';
 
@@ -76,8 +76,14 @@ export default function Contact() {
                 setStatus({ loading: false, type: 'error', message: 'Failed to send message. Please try again.' });
             });
     };
-	
-	
+	useEffect(() => {
+        setTimeout(() => {
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth",
+        });
+    }, 100);
+    }, [location]);
 	
 	return (
 		<div

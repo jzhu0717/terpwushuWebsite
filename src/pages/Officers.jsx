@@ -1,4 +1,14 @@
+import { useEffect } from 'react';
 export default function Officers() {
+	useEffect(() => {
+			setTimeout(() => {
+			window.scrollTo({
+				top: 0,
+				behavior: "smooth",
+			});
+		}, 100);
+		}, [location]);
+	
 	return (
 		<div
 			className="min-h-screen"
@@ -76,27 +86,27 @@ export default function Officers() {
 				{[ //UPDATE OFFICER CARDS
 					{
 					heading: "President",
-					image: "/Officers/2026/aaron.jpg",
+					image: "/Officers/2026/1President-Aaron_Yang.jpg",
 					caption: "Aaron Yang"
 					},
 					{
 					heading: "Vice President",
-					image: "/Officers/2026/josh.jpg",
+					image: "/Officers/2026/2VP-Josh_Zhu.jpg",
 					caption: "Josh Zhu"
 					},
 					{
 					heading: "Treasurer",
-					image: "/Officers/2026/david.jpg",
+					image: "/Officers/2026/3Treasurer-David_Hong.jpg",
 					caption: "David Hong"
 					},
 					{
 					heading: "Secretary",
-					image: "/Officers/2026/ava.jpg",
+					image: "/Officers/2026/4Secretary-Ava_Chiu.jpg",
 					caption: "Ava Chiu"
 					},
 					{
-					heading: "PRC",
-					image: "/Officers/2026/rachel.jpg",
+					heading: "Public Relations",
+					image: "/Officers/2026/5PRC-Rachel_Park.jpg",
 					caption: "Rachel Park"
 					},
 				].map(({ heading, image, caption }) => (

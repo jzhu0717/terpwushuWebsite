@@ -1,4 +1,7 @@
 import { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom"; 
+import { supabase } from '../supabaseClient';
+
 
 const SLIDESHOW_IMAGES = [
   "/homepage/twCol2025.jpg",
@@ -13,7 +16,48 @@ const SLIDESHOW_IMAGES = [
 
 export default function Home() {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [announcements, setAnnouncements] = useState([]);
+  const [loading, setLoading] = useState(true);
   const timeoutRef = useRef(null);
+  const location = useLocation(); 
+
+  useEffect(() => {
+    const getLiveAnnouncements = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("announcements")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (!error && data) {
+          setAnnouncements(data);
+        }
+      } catch (err) {
+        console.error("Failed to sync announcements:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    getLiveAnnouncements();
+  }, []);
+
+  useEffect(() => {
+    if (location.hash === "#about") {
+    const element = document.getElementById("about");
+    if (element) {
+      setTimeout(() => {
+        element.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+  } else if (!location.hash) {
+    setTimeout(() => {
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+    }, 100);
+  }
+  }, [location]);
 
   const resetTimeout = () => {
     if (timeoutRef.current) {
@@ -269,8 +313,87 @@ export default function Home() {
           }}
         />
 
-        {/* Section cards */}
+        {/* Announcements */}
         <div
+          style={{
+            maxWidth: "680px",
+            width: "100%",
+            textAlign: "center",
+          }}
+        >
+          <h1
+            style={{
+              fontSize: "clamp(2rem, 5vw, 3.25rem)",
+              fontWeight: 800,
+              letterSpacing: "-0.02em",
+              lineHeight: 1.1,
+              color: "#1A1A1A",
+              marginBottom: "1rem",
+            }}
+          >
+            Announcements
+          </h1>
+          {/* announcement content here */}
+
+            <div className="flex flex-col gap-4 w-full text-left">
+            {loading ? (
+              <p className="text-center text-sm text-red-800 animate-pulse">Syncing updates...</p>
+            ) : announcements.length > 0 ? (
+              announcements.map((post) => (
+                <div
+                  key={post.id}
+                  style={{
+                    background: "rgba(255,255,255,0.82)",
+                    backdropFilter: "blur(6px)",
+                    border: "1px solid rgba(192, 57, 43, 0.15)",
+                    borderRadius: "12px",
+                    padding: "1.25rem 1.5rem",
+                  }}
+                  className="shadow-sm hover:shadow-md transition-all duration-200"
+                >
+                  <div className="flex justify-between items-baseline mb-2 gap-2 flex-wrap">
+                    <h3 style={{ fontSize: "1.15rem", fontWeight: 700, color: "#8B1A1A" }}>
+                      {post.title}
+                    </h3>
+                    <span style={{ fontSize: "0.75rem", color: "#666", fontWeight: 500 }}>
+                      By {post.author} • {new Date(post.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: "0.95rem", lineHeight: 1.6, color: "#333", whiteSpace: "pre-wrap" }}>
+                    {post.content}
+                  </p>
+                </div>
+              ))
+            ) : (
+              <div 
+                style={{ background: "rgba(255,255,255,0.4)", borderRadius: "12px", padding: "2rem" }}
+                className="text-center text-sm text-red-900 border border-dashed border-red-900/20"
+              >
+                No announcements yet.
+              </div>
+            )}
+          </div>
+
+
+
+
+
+
+        </div>
+
+        {/* Divider accent */}
+        <div
+          style={{
+            width: "48px",
+            height: "3px",
+            background: "linear-gradient(to right, #C0392B, #E74C3C)",
+            borderRadius: "2px",
+          }}
+        />
+
+        {/* About section */}
+        <div
+          id="about"
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
@@ -336,9 +459,9 @@ export default function Home() {
               >
                 {heading}
               </h2>
-              <p style={{ fontSize: "0.9375rem", lineHeight: 1.65, color: "#333" }}>
+              <div style={{ fontSize: "0.9375rem", lineHeight: 1.65, color: "#333" }}>
                 {body}
-              </p>
+              </div>
             </div>
           ))}
         </div>

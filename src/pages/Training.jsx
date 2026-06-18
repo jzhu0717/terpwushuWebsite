@@ -48,6 +48,15 @@ export default function Training() {
 		const newIndex = isLastSlide ? 0 : currentIndex + 1;
 		setCurrentIndex(newIndex);
 	  };
+
+	useEffect(() => {
+        setTimeout(() => {
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth",
+        });
+    }, 100);
+    }, [location]);
 	
 	return (
 		<div
@@ -268,7 +277,7 @@ export default function Training() {
 							<li><em>Note we only have Fridays and Saturdays at the Bubble to practice weapons. Please take advantage of these practices!</em></li>
 						</ol>
 						<br></br>
-						A guide to the Terpwushu curriculum for individual progression through forms can be downloaded <a href="/TerpWushu_Curriculum.pdf" target="_blank" rel="noopener noreferrer" className="text-red-600 underline" style={{ color: "#1A73E8", textDecoration: "underline" }}>here</a>.
+						A guide to the Terpwushu curriculum for individual progression through forms can be downloaded <a href="/docs/TerpWushu_Curriculum.pdf" target="_blank" rel="noopener noreferrer" className="text-red-600 underline" style={{ color: "#1A73E8", textDecoration: "underline" }}>here</a>.
 						<br></br><br></br>
 						<strong>Four Periods to the TerpWushu Year</strong>
 						<ol style={{ paddingLeft: "1.25rem" }}>

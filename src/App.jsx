@@ -11,6 +11,7 @@ import Tournament from './pages/Tournament';
 // import TournamentDetails from './pages/TournamentDetails';
 // import TournamentSignup from './pages/TournamentSignup';
 // import NotFound from './pages/NotFound';
+import AdminGatekeeper from './pages/admin/AdminGatekeeper';
 
 function App() {
   return (
@@ -30,7 +31,10 @@ function App() {
           <Route path="/tournament/:id/signup" element={<TournamentSignup />} /> */}
           
           {/* <Route path="*" element={<NotFound />} /> */}
+          {/* Admin gate */}
+          <Route path="/admin" element={<AdminGatekeeper />} />
         </Route>
+        
       </Routes>
     </BrowserRouter>
   );
