@@ -1,7 +1,7 @@
 # Terpwushu website
 This is the repository for Terpwushu club's website (updated 2026 by Josh Zhu). 
 
-As of right now, almost everything is set up - I need to figure out hosting (trying to move to cloud hosting), admin page, as well as the UWG stuff. so basically most the backend work lmao.
+As of right now, almost everything is set up - I need to figure out hosting (trying to move to cloud hosting) and the UWG stuff. so basically most the backend work lmao.
 
 The sourcecode for the webpages are in /src. Images and some pdf files are in /public 
 
