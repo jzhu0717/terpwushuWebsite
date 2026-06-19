@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useLocation } from "react-router-dom"; 
+import { useLocation, Link } from "react-router-dom"; 
 import { supabase } from '../supabaseClient';
 
 
@@ -411,7 +411,7 @@ export default function Home() {
                   <br /><br />
                   Here are some of the annual events that we host / participate in!
                   <ul style={{ textAlign: "center", paddingLeft: "1.25rem", marginTop: "0.5rem", fontSize:"0.8rem"}}>
-                    <li>University Wushu Games</li>
+                    <li style={{ color: "#1A73E8", textDecoration: "underline" }}><Link to="/tournament">University Wushu Games</Link></li>
                     <li>National Collegiate Wushu Tournament</li>
                     <li>East Coast Wushu Joint Practice</li>
                     <li>TASA TOT/Night Market</li>

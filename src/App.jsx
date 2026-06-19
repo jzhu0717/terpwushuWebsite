@@ -7,7 +7,7 @@ import Joining from './pages/Joining';
 import Training from './pages/Training';
 import Officers from './pages/Officers';
 import Contact from './pages/Contact';
-import Tournament from './pages/Tournament';
+import Tournament from './pages/tournament/Tournament';
 // import TournamentDetails from './pages/TournamentDetails';
 // import TournamentSignup from './pages/TournamentSignup';
 // import NotFound from './pages/NotFound';

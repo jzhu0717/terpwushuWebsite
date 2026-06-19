@@ -4,7 +4,6 @@ import ReCAPTCHA from 'react-google-recaptcha';
 
 export default function Contact() {
 	const recaptchaRef = useRef(null);
-	// 1. State configuration for form inputs
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -14,14 +13,12 @@ export default function Contact() {
 	// Token tracker state for reCAPTCHA validation
     const [captchaToken, setCaptchaToken] = useState(null);
     
-    // 2. UI status handling (loading, success, errors)
     const [status, setStatus] = useState({ loading: false, type: '', message: '' });
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-	// Tracks when the user solves the reCAPTCHA puzzle
     const handleCaptchaChange = (token) => {
         setCaptchaToken(token);
     };
@@ -30,29 +27,24 @@ export default function Contact() {
         e.preventDefault();
         const { name, email, message } = formData;
 
-        // Validation Rule 1: Check if boxes are empty
         if (!name.trim() || !email.trim() || !message.trim()) {
             setStatus({ loading: false, type: 'error', message: 'All fields are required.' });
             return;
         }
 
-        // Validation Rule 2: Validate email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
             setStatus({ loading: false, type: 'error', message: 'Please enter a valid email address.' });
             return;
         }
 
-        // Validation Rule 3: Verify the reCAPTCHA token exists
         if (!captchaToken) {
             setStatus({ loading: false, type: 'error', message: 'Please complete the reCAPTCHA check.' });
             return;
         }
 
-        // Clear errors and start loading state
         setStatus({ loading: true, type: '', message: '' });
 
-        // EmailJS Credentials Configuration
         const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
         const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
         const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;

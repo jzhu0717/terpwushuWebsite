@@ -2,10 +2,14 @@ import { useState } from 'react';
 import AdminOfficers from './AdminOfficers';
 import AdminPractices from './AdminPractices';
 import AdminAnnouncements from './AdminAnnouncements';
+// import AdminTournament from './AdminTournament';
+import { supabase } from '../../supabaseClient';
 
 export default function AdminDashboard() {
     const [activeTab, setActiveTab] = useState('announcements');
-
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+    };
     return (
         <div
 			className="min-h-screen"
@@ -20,6 +24,20 @@ export default function AdminDashboard() {
                     <button onClick={() => setActiveTab('announcements')} className={`text-sm transition-all ${activeTab === 'announcements' ? 'underline font-semibold text-red-200' : 'hover:text-red-200'}`}>Edit Announcements</button>
                     <button onClick={() => setActiveTab('practices')} className={`text-sm transition-all ${activeTab === 'practices' ? 'underline font-semibold text-red-200' : 'hover:text-red-200'}`}>Edit Practice Times</button>
                     <button onClick={() => setActiveTab('officers')} className={`text-sm transition-all ${activeTab === 'officers' ? 'underline font-semibold text-red-200' : 'hover:text-red-200'}`}>Edit Officers</button>      
+                    {/* <button onClick={() => setActiveTab('tournament')} className={`text-sm transition-all ${activeTab === 'tournament' ? 'underline font-semibold text-red-200' : 'hover:text-red-200'}`}>Edit Tournament</button>       */}
+
+                    <button 
+                        onClick={handleLogout}
+                        style={{
+                            marginLeft: "auto", // Pushes the logout button all the way to the right side
+                            backgroundColor: "rgba(255,255,255,0.15)",
+                            padding: "0.4rem 0.8rem",
+                            borderRadius: "4px",
+                            fontSize: "0.85rem"
+                        }}
+                    >
+                        Log Out
+                    </button>
                 </nav>
             </div>
 
@@ -28,6 +46,7 @@ export default function AdminDashboard() {
                 {activeTab === 'announcements' && <AdminAnnouncements />} 
                 {activeTab === 'practices' && <AdminPractices />}
                 {activeTab === 'officers' && <AdminOfficers />}
+                {/* {activeTab === 'tournament' && <AdminTournament />} */}
             </div>
         </div>
     );
