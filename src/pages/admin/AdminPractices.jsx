@@ -151,94 +151,94 @@ export default function AdminPractices() {
 
             <div className="max-w-4xl mx-auto bg-white border border-zinc-200 rounded-2xl p-6 sm:p-8 shadow-sm">
         
-        <div className="flex-1 bg-white/95 p-6 rounded-xl shadow-lg border border-red-900/10">
-          <h2 className="text-l font-extrabold text-[#611313] mb-1">Practice Times</h2>
-        </div>
+            <div className="flex-1 bg-white/95 p-6 rounded-xl shadow-lg border border-red-900/10">
+            <h2 className="text-l font-extrabold text-[#611313] mb-1">Practice Times</h2>
+            </div>
 
-        {message.text && (
-          <div className={`p-3 rounded-md mb-6 text-sm font-medium ${
-            message.type === 'success' 
-              ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' 
-              : 'bg-rose-50 border border-rose-200 text-rose-800'
-          }`}>
-            {message.text}
-          </div>
-        )}
+            {message.text && (
+            <div className={`p-3 rounded-md mb-6 text-sm font-medium ${
+                message.type === 'success' 
+                ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' 
+                : 'bg-rose-50 border border-rose-200 text-rose-800'
+            }`}>
+                {message.text}
+            </div>
+            )}
 
-        <form onSubmit={handleSave} className="space-y-4">
-          <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden divide-y divide-zinc-200">
-            {DAYS_OF_WEEK.map((day) => {
-              const data = schedule[day];
-              return (
-                <div 
-                  key={day} 
-                  className={`p-4 flex flex-col md:flex-row md:items-center gap-4 transition-colors ${
-                    data.checked ? 'bg-red-50/40' : 'hover:bg-zinc-50'
-                  }`}
-                >
-                  {/* Checkbox and Day Label */}
-                  <div className="flex items-center gap-3 min-w-[140px]">
-                    <input
-                      type="checkbox"
-                      id={`check-${day}`}
-                      checked={data.checked}
-                      onChange={() => handleCheckboxChange(day)}
-                      className="w-4 h-4 rounded text-red-600 bg-white border-zinc-300 focus:ring-red-500"
-                    />
-                    <label 
-                      htmlFor={`check-${day}`} 
-                      className={`font-semibold cursor-pointer select-none transition-colors ${
-                        data.checked ? 'text-black' : 'text-zinc-400'
-                      }`}
+            <form onSubmit={handleSave} className="space-y-4">
+            <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden divide-y divide-zinc-200">
+                {DAYS_OF_WEEK.map((day) => {
+                const data = schedule[day];
+                return (
+                    <div 
+                    key={day} 
+                    className={`p-4 flex flex-col md:flex-row md:items-center gap-4 transition-colors ${
+                        data.checked ? 'bg-red-50/40' : 'hover:bg-zinc-50'
+                    }`}
                     >
-                      {day}
-                    </label>
-                  </div>
-
-                  {/* Input Matrix Fields */}
-                  <div className={`flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3 transition-all duration-200 ${
-                    data.checked ? 'opacity-100' : 'opacity-30 pointer-events-none'
-                  }`}>
-                    <div>
-                      <label className="block text-[10px] uppercase tracking-wider text-black mb-1 font-bold">Start Time</label>
-                      <input
-                        type="text"
-                        value={data.startTime}
-                        disabled={!data.checked}
-                        required={data.checked}
-                        onChange={(e) => handleInputChange(day, 'startTime', e.target.value)}
-                        className="w-full bg-white border border-zinc-300 rounded px-3 py-1.5 text-sm text-black placeholder-zinc-400 focus:border-red-600 focus:outline-none"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-[10px] uppercase tracking-wider text-black mb-1 font-bold">End Time</label>
-                      <input
-                        type="text"
-                        value={data.endTime}
-                        disabled={!data.checked}
-                        required={data.checked}
-                        onChange={(e) => handleInputChange(day, 'endTime', e.target.value)}
-                        className="w-full bg-white border border-zinc-300 rounded px-3 py-1.5 text-sm text-black placeholder-zinc-400 focus:border-red-600 focus:outline-none"
-                      />
+                    {/* Checkbox and Day Label */}
+                    <div className="flex items-center gap-3 min-w-[140px]">
+                        <input
+                        type="checkbox"
+                        id={`check-${day}`}
+                        checked={data.checked}
+                        onChange={() => handleCheckboxChange(day)}
+                        className="w-4 h-4 rounded text-red-600 bg-white border-zinc-300 focus:ring-red-500"
+                        />
+                        <label 
+                        htmlFor={`check-${day}`} 
+                        className={`font-semibold cursor-pointer select-none transition-colors ${
+                            data.checked ? 'text-black' : 'text-zinc-400'
+                        }`}
+                        >
+                        {day}
+                        </label>
                     </div>
 
-                    <div>
-                      <label className="block text-[10px] uppercase tracking-wider text-black mb-1 font-bold">Location</label>
-                      <input
-                        type="text"
-                        value={data.location}
-                        disabled={!data.checked}
-                        required={data.checked}
-                        onChange={(e) => handleInputChange(day, 'location', e.target.value)}
-                        className="w-full bg-white border border-zinc-300 rounded px-3 py-1.5 text-sm text-black placeholder-zinc-400 focus:border-red-600 focus:outline-none"
-                      />
+                    {/* Input Matrix Fields */}
+                    <div className={`flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3 transition-all duration-200 ${
+                        data.checked ? 'opacity-100' : 'opacity-30 pointer-events-none'
+                    }`}>
+                        <div>
+                        <label className="block text-[10px] uppercase tracking-wider text-black mb-1 font-bold">Start Time</label>
+                        <input
+                            type="text"
+                            value={data.startTime}
+                            disabled={!data.checked}
+                            required={data.checked}
+                            onChange={(e) => handleInputChange(day, 'startTime', e.target.value)}
+                            className="w-full bg-white border border-zinc-300 rounded px-3 py-1.5 text-sm text-black placeholder-zinc-400 focus:border-red-600 focus:outline-none"
+                        />
+                        </div>
+                        
+                        <div>
+                        <label className="block text-[10px] uppercase tracking-wider text-black mb-1 font-bold">End Time</label>
+                        <input
+                            type="text"
+                            value={data.endTime}
+                            disabled={!data.checked}
+                            required={data.checked}
+                            onChange={(e) => handleInputChange(day, 'endTime', e.target.value)}
+                            className="w-full bg-white border border-zinc-300 rounded px-3 py-1.5 text-sm text-black placeholder-zinc-400 focus:border-red-600 focus:outline-none"
+                        />
+                        </div>
+
+                        <div>
+                        <label className="block text-[10px] uppercase tracking-wider text-black mb-1 font-bold">Location</label>
+                        <input
+                            type="text"
+                            value={data.location}
+                            disabled={!data.checked}
+                            required={data.checked}
+                            onChange={(e) => handleInputChange(day, 'location', e.target.value)}
+                            className="w-full bg-white border border-zinc-300 rounded px-3 py-1.5 text-sm text-black placeholder-zinc-400 focus:border-red-600 focus:outline-none"
+                        />
+                        </div>
                     </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                    </div>
+                );
+                })}
+            </div>
 
           <div className="flex justify-end pt-2">
             <button

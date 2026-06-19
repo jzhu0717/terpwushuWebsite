@@ -140,7 +140,7 @@ export default function AdminAnnouncements() {
 				</span>
 			</div>
 
-
+            
             {/* Global Flash Alerts */}
             {statusMessage.text && (
                 <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-md font-semibold text-sm border ${
@@ -150,6 +150,7 @@ export default function AdminAnnouncements() {
                 </div>
             )}
 
+            <div className="max-w-4xl mx-auto bg-white border border-zinc-200 rounded-2xl p-6 sm:p-8 shadow-sm">
             {/* BLOCK 1: CREATE NEW ANNOUNCEMENT */}
             <div className="flex-1 bg-white/95 p-6 rounded-xl shadow-lg border border-red-900/10">
                 <h3 className="text-xl font-extrabold text-[#611313] mb-1">New Post</h3>
@@ -217,7 +218,7 @@ export default function AdminAnnouncements() {
                 )}
             </div>
 
-
+            </div>
         </div>
     );
 }
