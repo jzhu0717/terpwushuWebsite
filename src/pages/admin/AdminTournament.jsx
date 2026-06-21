@@ -1,6 +1,43 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 
+function utcToEasternInput(utcString) {
+  if (!utcString) return "";
+  const date = new Date(utcString);
+  
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+  });
+  
+  const parts = formatter.formatToParts(date);
+  const p = Object.fromEntries(parts.map(part => [part.type, part.value]));
+  
+  // Returns the exact "YYYY-MM-DDTHH:mm" format the input requires
+  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
+}
+
+// 2. Converts Eastern Time (from the input) back to UTC for your database/state
+function easternToUTC(dateTimeString) {
+  if (!dateTimeString) return "";
+  
+  const [datePart] = dateTimeString.split('T');
+  const tempDate = new Date(`${datePart}T12:00:00`);
+  
+  // Automatically find if this specific date is -04:00 (EDT) or -05:00 (EST)
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    timeZoneName: 'longOffset'
+  }).formatToParts(tempDate);
+  
+  const offsetPart = parts.find(p => p.type === 'timeZoneName')?.value;
+  const offset = offsetPart ? offsetPart.replace('GMT', '') : '-04:00'; 
+  
+  // Combine input time with the calculated offset and output a clean UTC ISO string
+  return new Date(`${dateTimeString}:00${offset}`).toISOString();
+}
+
 export default function AdminTournament() {
     const [form, setForm] = useState({
         event_number: '',
@@ -22,7 +59,14 @@ export default function AdminTournament() {
         score_contesting: '',
         registration_manager: '',
         ring_coordinator: '',
-        webmaster: ''
+        webmaster: '',
+        reg_begins: '',
+        early_reg_ends: '',
+        late_reg_ends: '',
+        early_reg_price: '',
+        late_fee: '',
+        collegiate_discount: '',
+        price_per_event: ''
     });
   
     const [loading, setLoading] = useState(true);
@@ -55,6 +99,17 @@ export default function AdminTournament() {
         }
         loadTournamentSettings();
     }, []);
+
+    const handleDateChange = (e) => {
+        const { name, value } = e.target;
+        
+        const utcValue = easternToUTC(value);
+        
+        setForm(prev => ({
+            ...prev,
+            [name]: utcValue
+        }));
+    };
 
     // Helper to flash alert banners
     const showStatus = (text, type) => {
@@ -140,6 +195,52 @@ export default function AdminTournament() {
                         <div className="flex flex-col gap-1">
                             <label className="text-xs font-bold text-gray-700 uppercase">UWG Day & Date </label>
                             <input type="text" name="uwg_day" value={form.uwg_day} onChange={handleChange} placeholder="e.g., Saturday, November 15th, 2025" className="p-2 border rounded text-sm w-full" required />
+                        </div>
+                    </div>
+
+                    {/* Registration times */}
+                    <div className="pt-4">
+                        <h3 className="text-sm font-bold text-red-800 uppercase tracking-wider mb-3">
+                            Registration Times (EDT)
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-100 mb-4">
+                            
+                            <div className="flex flex-col gap-1">
+                                <label className="text-xs font-bold text-gray-600">Registration Begins</label>
+                                <input 
+                                    type="datetime-local" 
+                                    name="reg_begins" 
+                                    value={utcToEasternInput(form.reg_begins)} 
+                                    onChange={handleDateChange} 
+                                    className="p-2 border rounded text-sm" 
+                                    required 
+                                />
+                            </div>
+
+                            <div className="flex flex-col gap-1">
+                                <label className="text-xs font-bold text-gray-600">Early Registration Ends</label>
+                                <input 
+                                    type="datetime-local" 
+                                    name="early_reg_ends" 
+                                    value={utcToEasternInput(form.early_reg_ends)} 
+                                    onChange={handleDateChange} 
+                                    className="p-2 border rounded text-sm" 
+                                    required 
+                                />
+                            </div>
+
+                            <div className="flex flex-col gap-1">
+                                <label className="text-xs font-bold text-gray-600">Late Registration Ends</label>
+                                <input 
+                                    type="datetime-local" 
+                                    name="late_reg_ends" 
+                                    value={utcToEasternInput(form.late_reg_ends)} 
+                                    onChange={handleDateChange} 
+                                    className="p-2 border rounded text-sm" 
+                                    required 
+                                />
+                            </div>
+
                         </div>
                     </div>
 

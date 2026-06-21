@@ -148,8 +148,19 @@ export default function Tournament() {
         }
     }, [location]);
 
+    const now = new Date();
+    const regBegins = settings?.reg_begins ? new Date(settings.reg_begins) : null;
+    const earlyEnds = settings?.early_reg_ends ? new Date(settings.early_reg_ends) : null;
+    const lateEnds = settings?.late_reg_ends ? new Date(settings.late_reg_ends) : null;
 
-    
+    const hasRegStarted = regBegins && now >= regBegins;
+    const isEarlyBird = earlyEnds && now < earlyEnds;
+    const hasRegClosed = lateEnds && now >= lateEnds;
+
+    const basePrice = Number(settings?.early_reg_price || 0);
+    const lateFee = Number(settings?.late_fee || 0);
+    const currentRegistrationCost = isEarlyBird ? basePrice : (basePrice + lateFee);
+
 	const isScheduleAvailable = settings?.doors_open || settings?.opening_ceremony || settings?.competition_begin;
     const isLivestreamAvailable = settings?.livestream_ring_1 || settings?.livestream_ring_2;
     const isCommitteeAvailable = settings && Object.keys(settings).some(key => 
@@ -266,7 +277,13 @@ export default function Tournament() {
                             <Link to="#faq">FAQ</Link>
 							<Link to="#committee">Committee</Link>
 							<Link to="#archives">Archives</Link>
-							<span className="opacity-60 cursor-not-allowed">Register</span>
+							    {hasRegClosed ? (
+                                <span className="opacity-60 cursor-not-allowed">Register</span>
+                            ) : !hasRegStarted ? (
+                                <span className="opacity-60 cursor-not-allowed">Register</span>
+                            ) : (
+                                <Link to="/tournament/registration">Register</Link>
+                            )}                            
                         </nav>
                     </div>
                     
@@ -338,6 +355,99 @@ export default function Tournament() {
 
 						<br />
 
+                        <div
+                            id="info"
+                            style={{
+                                display: "grid",
+                                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                                gap: "1.25rem",
+                                maxWidth: "860px",
+                                width: "100%",
+                                textAlign: "left"
+                            }}
+                        >
+                            {[
+                                {
+                                    heading: "Registration",
+                                    body: (
+                                        <>
+                                            <div style={{ width: "100%", color: "#333" }}>
+                                                {settings ? (
+                                                    <>
+                                                        <div className="mt-4">
+                                                            {hasRegClosed ? (
+                                                                <div className="p-3 bg-zinc-100 text-zinc-500 rounded-lg text-center font-bold border border-zinc-200 text-sm">
+                                                                    Registration has passed
+                                                                </div>
+                                                            ) : !hasRegStarted ? (
+                                                                <div className="p-3 bg-amber-50 text-amber-800 rounded-lg text-center text-xs border border-amber-200">
+                                                                    Registration opens {regBegins ? regBegins.toLocaleDateString(undefined, { dateStyle: 'medium' }) : 'soon!'}
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex flex-col items-center gap-3"> 
+                                                                    <div className="flex w-full justify-center"> 
+                                                                        <Link to="/tournament/registration" className="flex items-center w-fit">
+                                                                            <img src="/uwg/registerbutton.png" alt="register" className="h-20" />
+                                                                        </Link>
+                                                                    </div>
+                                                                    <strong>Registration is open!</strong>
+                                                                    {earlyEnds && (
+                                                                        <div>
+                                                                            <span className="font-bold text-gray-700">Early Registration Ends:</span>{' '}
+                                                                            {earlyEnds.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                                                                        </div>
+                                                                    )}
+                                                                    {lateEnds && (
+                                                                        <div>
+                                                                            <span className="font-bold text-gray-700">Final Registration Deadline:</span>{' '}
+                                                                            {lateEnds.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <p className="text-zinc-400 text-sm">Loading...</p>
+                                                )}
+                                            </div>
+                                        </>
+                                    ),
+                                },
+                            ].map(({ heading, body }) => (
+                                <div
+                                    key={heading}
+                                    style={{
+                                        background: "rgba(255,255,255,0.82)",
+                                        backdropFilter: "blur(6px)",
+                                        border: "1px solid rgba(192, 57, 43, 0.15)",
+                                        borderRadius: "12px",
+                                        padding: "1.5rem 1.25rem",
+                                        transition: "box-shadow 0.15s",
+                                    }}
+                                >
+                                    <h2
+                                        style={{
+                                            fontSize: "1rem",
+                                            fontWeight: 700,
+                                            color: "#8B1A1A",
+                                            marginBottom: "0.5rem",
+                                            textTransform: "uppercase",
+                                            letterSpacing: "0.06em",
+                                            textAlign: "center"
+                                        }}
+                                    >
+                                        {heading}
+                                    </h2>
+                                    <div style={{ fontSize: "0.9375rem", lineHeight: 1.65, color: "#333", textAlign: "left" }}>
+                                        {body}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+						<br />
+
 						<div
                             id="schedule"
                             style={{
@@ -369,7 +479,7 @@ export default function Tournament() {
 
 											<br />
                                                 <div className="flex w-full justify-center"> 
-                                                <Link to="/#" className="flex items-center w-fit">
+                                                <Link to="/tournament/event-order" className="flex items-center w-fit">
                                                     <img src="/uwg/eventOrderButton.png" alt="Event Order" className="h-20" />
                                                 </Link>
                                                 </div>

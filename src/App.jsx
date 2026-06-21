@@ -8,6 +8,8 @@ import Training from './pages/Training';
 import Officers from './pages/Officers';
 import Contact from './pages/Contact';
 import Tournament from './pages/tournament/Tournament';
+import Registration from './pages/tournament/Registration';
+import EventOrder from './pages/tournament/EventOrder';
 // import TournamentDetails from './pages/TournamentDetails';
 // import TournamentSignup from './pages/TournamentSignup';
 // import NotFound from './pages/NotFound';
@@ -24,12 +26,13 @@ function App() {
           <Route path="/training" element={<Training />} />
           <Route path="/officers" element={<Officers />} />
           <Route path="/contact" element={<Contact />} />
-          <Route path="/tournament" element={<Tournament />} />
-          {/* Tournament routes */}
-          {/* <Route path="/tournament" element={<Tournament />} />
-          <Route path="/tournament/:id" element={<TournamentDetails />} />
-          <Route path="/tournament/:id/signup" element={<TournamentSignup />} /> */}
           
+          
+          {/* Tournament routes */}
+          <Route path="/tournament" element={<Tournament />} />
+          <Route path="/tournament/registration" element={<Registration />} />
+          <Route path="/tournament/event-order" element={<EventOrder />} />
+
           {/* <Route path="*" element={<NotFound />} /> */}
           {/* Admin gate */}
           <Route path="/admin" element={<AdminGatekeeper />} />
