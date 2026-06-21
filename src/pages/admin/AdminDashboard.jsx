@@ -2,7 +2,8 @@ import { useState } from 'react';
 import AdminOfficers from './AdminOfficers';
 import AdminPractices from './AdminPractices';
 import AdminAnnouncements from './AdminAnnouncements';
-// import AdminTournament from './AdminTournament';
+import AdminTournament from './AdminTournament';
+import AdminTournamentArchives from './AdminTournamentArchives';
 import { supabase } from '../../supabaseClient';
 
 export default function AdminDashboard() {
@@ -24,8 +25,8 @@ export default function AdminDashboard() {
                     <button onClick={() => setActiveTab('announcements')} className={`text-sm transition-all ${activeTab === 'announcements' ? 'underline font-semibold text-red-200' : 'hover:text-red-200'}`}>Edit Announcements</button>
                     <button onClick={() => setActiveTab('practices')} className={`text-sm transition-all ${activeTab === 'practices' ? 'underline font-semibold text-red-200' : 'hover:text-red-200'}`}>Edit Practice Times</button>
                     <button onClick={() => setActiveTab('officers')} className={`text-sm transition-all ${activeTab === 'officers' ? 'underline font-semibold text-red-200' : 'hover:text-red-200'}`}>Edit Officers</button>      
-                    {/* <button onClick={() => setActiveTab('tournament')} className={`text-sm transition-all ${activeTab === 'tournament' ? 'underline font-semibold text-red-200' : 'hover:text-red-200'}`}>Edit Tournament</button>       */}
-
+                    <button onClick={() => setActiveTab('tournament')} className={`text-sm transition-all ${activeTab === 'tournament' ? 'underline font-semibold text-red-200' : 'hover:text-red-200'}`}>Edit Tournament</button>      
+                    <button onClick={() => setActiveTab('tournament-archives')} className={`text-sm transition-all ${activeTab === 'tournament-archives' ? 'underline font-semibold text-red-200' : 'hover:text-red-200'}`}>Edit Tournament Archives</button>      
                     <button 
                         onClick={handleLogout}
                         style={{
@@ -46,7 +47,8 @@ export default function AdminDashboard() {
                 {activeTab === 'announcements' && <AdminAnnouncements />} 
                 {activeTab === 'practices' && <AdminPractices />}
                 {activeTab === 'officers' && <AdminOfficers />}
-                {/* {activeTab === 'tournament' && <AdminTournament />} */}
+                {activeTab === 'tournament' && <AdminTournament />}
+                {activeTab === 'tournament-archives' && <AdminTournamentArchives />}
             </div>
         </div>
     );

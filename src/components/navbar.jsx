@@ -14,8 +14,6 @@ export default function Navbar() {
   return (
     <nav
       className={`fixed top-0 left-0 w-full z-50 text-brand-white p-4 transition-all duration-300 ${
-        // On mobile, we keep a solid background when scrolled so elements stay readable.
-        // On desktop (lg:), we allow it to go transparent for your pill effect.
         scrolled 
           ? 'bg-[#2e303a]/95 backdrop-blur-md shadow-lg lg:bg-transparent lg:backdrop-blur-0 lg:shadow-none' 
           : 'bg-[#2e303a]/95 backdrop-blur-md shadow-md'
@@ -60,7 +58,6 @@ export default function Navbar() {
         </ul>
 
         {/* Right Side: Desktop Socials */}
-        {/* Hidden on mobile/tablet, shown on desktop (lg:) to keep mobile clean */}
         <div className="hidden lg:flex gap-4 justify-end shrink-0">
           <a href="https://www.facebook.com/terpwushu" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
             <img src="/socials/fb.webp" alt="Facebook" className="h-6" />

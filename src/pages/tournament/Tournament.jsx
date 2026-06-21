@@ -2,8 +2,32 @@ import { useState, useEffect, useRef } from 'react';
 import emailjs from '@emailjs/browser';
 import ReCAPTCHA from 'react-google-recaptcha';
 import { Link, useLocation } from "react-router-dom";
+import { supabase } from '../../supabaseClient';
+
+const renderPhotoLinks = (photosUrls) => {
+    if (!photosUrls || photosUrls.length === 0) {
+        return <span className="text-zinc-400 italic text-sm">None</span>;
+    }
+
+    return (
+        <div className="flex flex-wrap gap-2">
+        {photosUrls.map((url, index) => (
+            <a
+            key={index}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center text-xs font-semibold bg-red-50 text-red-700 border border-red-200 px-2.5 py-1 rounded hover:bg-red-100 transition"
+            >
+            Album {photosUrls.length > 1 ? index + 1 : ""}
+            </a>
+        ))}
+        </div>
+    );
+};
 
 export default function Tournament() {
+    const [archives, setArchives] = useState([]);
     const location = useLocation(); 
 	const recaptchaRef = useRef(null);
     const [formData, setFormData] = useState({
@@ -12,10 +36,31 @@ export default function Tournament() {
         message: ''
     });
 
-	// Token tracker state for reCAPTCHA validation
     const [captchaToken, setCaptchaToken] = useState(null);
-    
     const [status, setStatus] = useState({ loading: false, type: '', message: '' });
+
+	const [settings, setSettings] = useState(null);
+    const [loadingSettings, setLoadingSettings] = useState(true);
+
+	useEffect(() => {
+        async function fetchSettings() {
+            try {
+                const { data, error } = await supabase
+                    .from('tournament_webpage')
+                    .select('*')
+                    .eq('id', 1)
+                    .single();
+                
+                if (error) throw error;
+                setSettings(data);
+            } catch (err) {
+                console.error("Error loading tournament details:", err);
+            } finally {
+                setLoadingSettings(false);
+            }
+        }
+        fetchSettings();
+    }, []);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -102,7 +147,47 @@ export default function Tournament() {
             }, 100);
         }
     }, [location]);
+
+
     
+	const isScheduleAvailable = settings?.doors_open || settings?.opening_ceremony || settings?.competition_begin;
+    const isLivestreamAvailable = settings?.livestream_ring_1 || settings?.livestream_ring_2;
+    const isCommitteeAvailable = settings && Object.keys(settings).some(key => 
+		key.startsWith('committee_') || 
+		key.endsWith('_chair') || 
+		key.endsWith('_manager') || 
+		key.endsWith('_liaison') || 
+		key.endsWith('_coordinator') || 
+		key === 'webmaster' || 
+		key === 'score_contesting'
+		) && (
+		settings.committee_chief || 
+		settings.collegiate_liaison || 
+		settings.wushu_liaison || 
+		settings.judges_liaison || 
+		settings.design_chair || 
+		settings.visual_tech_chair || 
+		settings.score_contesting || 
+		settings.registration_manager || 
+		settings.ring_coordinator || 
+		settings.webmaster
+		);
+
+    
+    useEffect(() => {
+        const fetchArchives = async () => {
+            const { data, error } = await supabase
+            .from('tournament_archives')
+            .select('*')
+            .order('event_number', { ascending: false });
+            
+            if (!error && data) {
+            setArchives(data);
+            }
+        };
+        fetchArchives();
+        }, []);
+
     return (
         <div
             className="min-h-screen"
@@ -211,7 +296,11 @@ export default function Tournament() {
                                     heading: "General Information",
                                     body: (
                                         <>
-                                            The 19th Annual University Wushu Games (UWG) will be held on <strong>Saturday, November 15th, 2025</strong> at the University of Maryland, College Park. UWG is a unique opportunity for east coast schools in the area and other collegiate wushu clubs to come together and strengthen the Wushu/Chinese Kung Fu community. This event is open all ages, and it is our hope to continue providing this opportunity for years to come.
+                                            The {" "}
+											{settings?.event_number} {/* event number here, ## + th / st / nd / rd  */}
+											Annual University Wushu Games (UWG) will be held on 
+											<strong> {settings?.uwg_day} </strong> {/* event date here  */}
+											at the University of Maryland, College Park. UWG is a unique opportunity for east coast schools in the area and other collegiate wushu clubs to come together and strengthen the Wushu/Chinese Kung Fu community. This event is open all ages, and it is our hope to continue providing this opportunity for years to come.
                                         </>
                                     ),
                                 },
@@ -265,17 +354,39 @@ export default function Tournament() {
                                     heading: "Schedule",
                                     body: (
                                         <>
+											{/* event times here  */}
                                             <em>Times subject to change.</em>
 											<br />
-											time block 
+											{!isScheduleAvailable ? (
+												<div className="font-bold text-lg text-gray-600 my-4">Schedule Details: TBA</div>
+											) : (
+												<div className="flex flex-col gap-1 my-3 text-left max-w-xs mx-auto">
+													{settings.doors_open && <div><strong>Doors Open:</strong> {settings.doors_open}</div>}
+													{settings.opening_ceremony && <div><strong>Opening Ceremony:</strong> {settings.opening_ceremony}</div>}
+													{settings.competition_begin && <div><strong>Competition Begins:</strong> {settings.competition_begin}</div>}
+												</div>
+											)} 
 
 											<br />
-											** red button that says Event Order **
-											<br />
-											Please confirm that your name is under all the forms that you have registered for. If there are any mistakes or changes you would like to make, please contact us by email ASAP so we can address any problems!
+                                                <div className="flex w-full justify-center"> 
+                                                <Link to="/#" className="flex items-center w-fit">
+                                                    <img src="/uwg/eventOrderButton.png" alt="Event Order" className="h-20" />
+                                                </Link>
+                                                </div>
+                                            <br />
+											<p className="text-xs text-left text-gray-600 mb-4">
+												Please confirm that your name is under all the forms that you have registered for. If there are any mistakes or changes you would like to make, please contact us by email ASAP so we can address any problems!
+											</p>
                                         
-
-											{/* if livestream, put links here */}
+											{isLivestreamAvailable && (
+												<div className="mt-4 pt-4 border-t border-red-200 text-left">
+													<h4 className="font-bold text-red-800 text-sm uppercase tracking-wider mb-2 text-center">🔴 Live Streams</h4>
+													<div className="flex flex-col gap-1 items-center justify-center">
+														{settings.livestream_ring_1 && <a href={settings.livestream_ring_1} target="_blank" rel="noreferrer" className="text-blue-600 underline text-sm font-medium">Watch Ring 1 Live</a>}
+														{settings.livestream_ring_2 && <a href={settings.livestream_ring_2} target="_blank" rel="noreferrer" className="text-blue-600 underline text-sm font-medium">Watch Ring 2 Live</a>}
+													</div>
+												</div>
+											)}
 										</>
                                     ),
                                 },
@@ -283,12 +394,13 @@ export default function Tournament() {
                                     heading: "Venue",
                                     body: (
                                         <>
-                                            <strong>The University Wushu Games will be held at Ritchie Coliseum</strong>
+                                            <strong>The University Wushu Games will be held at {settings?.venue_location}</strong>
 											<br />
-											7675 Baltimore Ave, College Park, MD 20742
+											{/* venue address here */}
+											{settings?.venue_address}
 											<br />
 											<iframe
-												title="SPH Location map"
+												title="Venue Location map"
 												src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3101.326812690534!2d-76.936431!3d38.985037!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89b7c6bced0c8849%3A0x8adea64deb89027f!2sRitchie%20Coliseum!5e0!3m2!1sen!2sus!4v1781904484603!5m2!1sen!2sus"
 												width="400"
 												height="300"
@@ -298,7 +410,13 @@ export default function Tournament() {
 												referrerPolicy="no-referrer-when-downgrade"
 											/>
 											<br />
-											Parking is free in any unrestricted lots on campus. We recommend parking at lots J2, J1, L located near Ritchie Coliseum on competition day. For more information on parking, please refer to the map below, as well as this Campus Parking Map. Please read all signs at the entrance of each lot before parking. TerpWushu will not claim responsibility for any parking violations or damages to your vehicle while on campus.
+											Parking is free in any unrestricted lots on campus. We recommend parking at lots {" "}
+											{/* parking lots here */}
+											{settings?.parking_locations}
+											{" "} located near {" "}
+											{/* venue name here */}
+											{settings?.venue_location}
+											{" "} on competition day. For more information on parking, please refer to the map below, as well as {" "}<a href="https://maps.umd.edu/" target="_blank" rel="noreferrer" style={{ color: "#1A73E8", textDecoration: "underline" }}>this Campus Parking Map</a>. Please read all signs at the entrance of each lot before parking. TerpWushu will not claim responsibility for any parking violations or damages to your vehicle while on campus.
                                         </>
                                     ),
                                 },
@@ -396,7 +514,6 @@ export default function Tournament() {
                             ))}
                         </div>
 
-
                         <br />
 
                         <div
@@ -487,7 +604,18 @@ export default function Tournament() {
                                     heading: "Committee",
                                     body: (
                                         <>
-										{/* commitee members here */}
+										<div className="grid grid-columns-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm text-gray-800 max-w-md mx-auto">
+                                        {settings?.committee_chief && <div><strong>Committee Chief:</strong> {settings?.committee_chief}</div>}
+                                        {settings?.collegiate_liaison && <div><strong>Collegiate Schools Liaison:</strong> {settings?.collegiate_liaison}</div>}
+                                        {settings?.wushu_liaison && <div><strong>Wushu Schools Liaison:</strong> {settings?.wushu_liaison}</div>}
+                                        {settings?.judges_liaison && <div><strong>Judges Liaison:</strong> {settings?.judges_liaison}</div>}
+                                        {settings?.design_chair && <div><strong>Design Chair:</strong> {settings?.design_chair}</div>}
+                                        {settings?.visual_tech_chair && <div><strong>Visual Tech Chair:</strong> {settings?.visual_tech_chair}</div>}
+                                        {settings?.score_contesting && <div><strong>Score Contesting:</strong> {settings?.score_contesting}</div>}
+                                        {settings?.registration_manager && <div><strong>Registration Manager:</strong> {settings?.registration_manager}</div>}
+                                        {settings?.ring_coordinator && <div><strong>Ring Event Coordinator:</strong> {settings?.ring_coordinator}</div>}
+                                        {settings?.webmaster && <div><strong>Webmaster:</strong> {settings?.webmaster}</div>}
+                                    	</div>
                                         </>
                                     ),
                                 },
@@ -595,7 +723,6 @@ export default function Tournament() {
 											</form>
 										</div>
                                         </>
-										
                                     ),
                                 },
                             ].map(({ heading, body }) => (
@@ -648,7 +775,75 @@ export default function Tournament() {
                                     heading: "Archives",
                                     body: (
                                         <>
-										{/* past Year	Scores	Videos	Photos */}
+                                            <div className="overflow-x-auto w-full">
+                                                <table className="w-full min-w-[600px] border-collapse text-left text-sm text-gray-700">
+                                                <thead>
+                                                    <tr className="border-b border-gray-200 text-gray-500 font-semibold uppercase text-xs tracking-wider">
+                                                    <th className="pb-3 pr-4 font-bold text-[#8B1A1A]">Year</th>
+                                                    <th className="pb-3 px-4 font-bold text-[#8B1A1A]">Scores</th>
+                                                    <th className="pb-3 px-4 font-bold text-[#8B1A1A]">Videos</th>
+                                                    <th className="pb-3 pl-4 font-bold text-[#8B1A1A]">Photos</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-100">
+                                                    {archives.map((row) => (
+                                                    <tr key={row.id} className="hover:bg-white/40 transition-colors">
+                                                        {/* Column 1: Edition & Date */}
+                                                        <td className="py-3.5 pr-4 align-top">
+                                                        <div className="font-bold text-gray-900">{row.edition}</div>
+                                                        <div className="text-xs text-gray-500 mt-0.5">{row.event_date}</div>
+                                                        </td>
+
+                                                        {/* Conditional evaluation check if an exception/cancellation note exists */}
+                                                        {row.notes ? (
+                                                        <td colSpan={3} className="py-3.5 px-4 align-top text-gray-500 italic font-medium">
+                                                            {row.notes}
+                                                        </td>
+                                                        ) : (
+                                                        <>
+                                                            {/* Column 2: Scores */}
+                                                            <td className="py-3.5 px-4 align-top">
+                                                            {row.scores_url ? (
+                                                                <a 
+                                                                href={row.scores_url} 
+                                                                target="_blank" 
+                                                                rel="noopener noreferrer" 
+                                                                className="text-red-700 hover:underline font-medium"
+                                                                >
+                                                                Download Scores (.xlsx)
+                                                                </a>
+                                                            ) : (
+                                                                <span className="text-gray-400">Not Available</span>
+                                                            )}
+                                                            </td>
+
+                                                            {/* Column 3: Videos */}
+                                                            <td className="py-3.5 px-4 align-top">
+                                                            {row.videos_url ? (
+                                                                <a 
+                                                                href={row.videos_url} 
+                                                                target="_blank" 
+                                                                rel="noopener noreferrer" 
+                                                                className="text-red-700 hover:underline font-medium"
+                                                                >
+                                                                Youtube
+                                                                </a>
+                                                            ) : (
+                                                                <span className="text-gray-400">No Videos</span>
+                                                            )}
+                                                            </td>
+
+                                                            {/* Column 4: Photos Parser */}
+                                                            <td className="py-3.5 pl-4 align-top whitespace-normal">
+                                                            {renderPhotoLinks(row.photos_urls)}
+                                                            </td>
+                                                        </>
+                                                        )}
+                                                    </tr>
+                                                    ))}
+                                                </tbody>
+                                                </table>
+                                            </div>
                                         </>
                                     ),
                                 },
