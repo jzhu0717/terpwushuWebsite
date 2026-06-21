@@ -9,6 +9,10 @@ I will write more later. Trust, I will write a lot so that the documentation wil
 
 Below is the default readme for what it built the frontend with - react + vite.
 
+To start frontend local dev: npm run dev
+
+To start backend PostgreSQL stuff: npx supabase start
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
