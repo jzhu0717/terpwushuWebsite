@@ -399,7 +399,7 @@ export default function Tournament() {
                                                                     )}
                                                                     {lateEnds && (
                                                                         <div>
-                                                                            <span className="font-bold text-gray-700">Final Registration Deadline:</span>{' '}
+                                                                            <span className="font-bold text-gray-700">Regular Registration Deadline:</span>{' '}
                                                                             {lateEnds.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
                                                                         </div>
                                                                     )}
@@ -898,57 +898,56 @@ export default function Tournament() {
                                                 <tbody className="divide-y divide-gray-100">
                                                     {archives.map((row) => (
                                                     <tr key={row.id} className="hover:bg-white/40 transition-colors">
-                                                        {/* Column 1: Edition & Date */}
-                                                        <td className="py-3.5 pr-4 align-top">
-                                                        <div className="font-bold text-gray-900">{row.edition}</div>
-                                                        <div className="text-xs text-gray-500 mt-0.5">{row.event_date}</div>
+                                                        
+                                                        {/* Column 1: Edition, Date & Optional Notes */}
+                                                        <td className="py-3.5 pr-4 align-top max-w-[200px]">
+                                                            <div className="font-bold text-gray-900">{row.edition}</div>
+                                                            <div className="text-xs text-gray-500 mt-0.5">{row.event_date}</div>
+                                                            
+                                                            {/* If a note exists, it renders neatly under the date instead of hijacking the row */}
+                                                            {row.notes && (
+                                                                <div className="text-xs text-red-700 italic font-medium mt-1.5 bg-red-50/50 p-1.5 rounded border border-red-100">
+                                                                    Note: {row.notes}
+                                                                </div>
+                                                            )}
                                                         </td>
 
-                                                        {/* Conditional evaluation check if an exception/cancellation note exists */}
-                                                        {row.notes ? (
-                                                        <td colSpan={3} className="py-3.5 px-4 align-top text-gray-500 italic font-medium">
-                                                            {row.notes}
-                                                        </td>
+                                                        {/* Column 2: Scores */}
+                                                        <td className="py-3.5 px-4 align-top">
+                                                        {row.scores_url ? (
+                                                            <a 
+                                                            href={row.scores_url} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer" 
+                                                            className="text-red-700 hover:underline font-medium"
+                                                            >
+                                                            Download Scores (.xlsx)
+                                                            </a>
                                                         ) : (
-                                                        <>
-                                                            {/* Column 2: Scores */}
-                                                            <td className="py-3.5 px-4 align-top">
-                                                            {row.scores_url ? (
-                                                                <a 
-                                                                href={row.scores_url} 
-                                                                target="_blank" 
-                                                                rel="noopener noreferrer" 
-                                                                className="text-red-700 hover:underline font-medium"
-                                                                >
-                                                                Download Scores (.xlsx)
-                                                                </a>
-                                                            ) : (
-                                                                <span className="text-gray-400">Not Available</span>
-                                                            )}
-                                                            </td>
-
-                                                            {/* Column 3: Videos */}
-                                                            <td className="py-3.5 px-4 align-top">
-                                                            {row.videos_url ? (
-                                                                <a 
-                                                                href={row.videos_url} 
-                                                                target="_blank" 
-                                                                rel="noopener noreferrer" 
-                                                                className="text-red-700 hover:underline font-medium"
-                                                                >
-                                                                Youtube
-                                                                </a>
-                                                            ) : (
-                                                                <span className="text-gray-400">No Videos</span>
-                                                            )}
-                                                            </td>
-
-                                                            {/* Column 4: Photos Parser */}
-                                                            <td className="py-3.5 pl-4 align-top whitespace-normal">
-                                                            {renderPhotoLinks(row.photos_urls)}
-                                                            </td>
-                                                        </>
+                                                            <span className="text-gray-400">Not Available</span>
                                                         )}
+                                                        </td>
+
+                                                        {/* Column 3: Videos */}
+                                                        <td className="py-3.5 px-4 align-top">
+                                                        {row.videos_url ? (
+                                                            <a 
+                                                            href={row.videos_url} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer" 
+                                                            className="text-red-700 hover:underline font-medium"
+                                                            >
+                                                            Youtube
+                                                            </a>
+                                                        ) : (
+                                                            <span className="text-gray-400">No Videos</span>
+                                                        )}
+                                                        </td>
+
+                                                        {/* Column 4: Photos */}
+                                                        <td className="py-3.5 pl-4 align-top whitespace-normal">
+                                                            {renderPhotoLinks(row.photos_urls)}
+                                                        </td>
                                                     </tr>
                                                     ))}
                                                 </tbody>
