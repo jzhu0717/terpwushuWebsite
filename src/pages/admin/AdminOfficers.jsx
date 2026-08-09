@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../../supabaseClient'; // Adjust path if necessary
+import { api } from '../../apiClient';
 
 const POSITION_MAP = {
   "President": { order: 1, prefix: "1President" },
@@ -55,55 +55,28 @@ export default function AdminOfficers() {
     setMessage("");
 
     try {
-        const { data: existingOfficer } = await supabase
-        .from('officers')
-        .select('image_url')
-        .eq('year', year)
-        .eq('position', position)
-        .maybeSingle(); // Returns data or null without throwing an error
-
-        // 2. If a record exists with an old image, delete it from the bucket first
-        if (existingOfficer && existingOfficer.image_url) {
-        const oldStoragePath = existingOfficer.image_url.split('/officers/')[1];
-        
-        if (oldStoragePath) {
-            await supabase.storage
-            .from('officers')
-            .remove([oldStoragePath]);
-        }
-        }
-      
-      
-        const formattedName = name.trim().replace(/\s+/g, '_');
       const posData = POSITION_MAP[position];
       const fileExt = file.name.split('.').pop();
-      const customFileName = `${posData.prefix}-${formattedName}.${fileExt}`;
-      const filePath = `${year}/${customFileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('officers')
-        .upload(filePath, file, { cacheControl: '3600', upsert: true });
+      const { uploadUrl, publicUrl } = await api.post('/uploads/officers/presign', {
+        year,
+        position,
+        contentType: file.type,
+        extension: fileExt,
+      });
 
-      if (uploadError) throw uploadError;
+      const putRes = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type },
+        body: file,
+      });
+      if (!putRes.ok) throw new Error('Failed to upload image');
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('officers')
-        .getPublicUrl(filePath);
-
-      const { error: dbError } = await supabase
-        .from('officers')
-        .upsert(
-          {
-            year: year, // Stored as text now
-            position,
-            name: name.trim(),
-            image_url: publicUrl,
-            sort_order: posData.order
-          },
-          { onConflict: 'year,position' }
-        );
-
-      if (dbError) throw dbError;
+      await api.put(`/officers/${year}/${position}`, {
+        name: name.trim(),
+        image_url: publicUrl,
+        sort_order: posData.order,
+      });
 
       setMessage("Saved successfully!");
       setName("");

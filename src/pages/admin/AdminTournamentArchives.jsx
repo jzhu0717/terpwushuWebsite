@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../../supabaseClient'; 
+import { api } from '../../apiClient';
 
 const getOrdinalSuffix = (num) => {
   const j = num % 10, k = num % 100;
@@ -24,17 +24,8 @@ export default function AdminTournamentArchives() {
 
   const refreshHighestEvent = async () => {
     try {
-      const { data, error } = await supabase
-        .from('tournament_archives')
-        .select('event_number')
-        .order('event_number', { ascending: false })
-        .limit(1);
-
-      let highest = 19; 
-      if (!error && data && data.length > 0) {
-        highest = data[0].event_number;
-      }
-
+      const { latest } = await api.get('/tournament-archives/latest-event-number');
+      const highest = latest || 19;
       const nextDefault = highest + 1;
       setEventNumber(String(nextDefault));
 
@@ -71,62 +62,37 @@ export default function AdminTournamentArchives() {
       : [];
 
     try {
-      const { data: existingArchive } = await supabase
-        .from('tournament_archives')
-        .select('scores_url')
-        .eq('event_number', numericEventVal)
-        .maybeSingle();
+      const existingArchive = await api.get(`/tournament-archives/${encodeURIComponent(computedEdition)}`);
 
-      let finalScoresUrl = null;
+      let finalScoresUrl = existingArchive?.scores_url || null;
 
       if (scoresFile) {
-        if (existingArchive && existingArchive.scores_url) {
-          const oldStoragePath = existingArchive.scores_url.split('/archives/')[1];
-          if (oldStoragePath) {
-            await supabase.storage.from('archives').remove([oldStoragePath]);
-          }
-        }
-
         const fileExt = scoresFile.name.split('.').pop();
-        
-        const sanitizedBaseName = customFileName.trim()
-          ? customFileName.trim().replace(/\s+/g, '_')
-          : `${computedEdition.replace(/\s+/g, '_')}_scores`;
-          
-        const finalFileName = `${sanitizedBaseName}.${fileExt}`;
-        const filePath = `scores/${finalFileName}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from('archives')
-          .upload(filePath, scoresFile, { cacheControl: '3600', upsert: true });
+        const { uploadUrl, publicUrl } = await api.post('/uploads/archives/presign', {
+          edition: computedEdition,
+          contentType: scoresFile.type,
+          extension: fileExt,
+        });
 
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('archives')
-          .getPublicUrl(filePath);
+        const putRes = await fetch(uploadUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': scoresFile.type },
+          body: scoresFile,
+        });
+        if (!putRes.ok) throw new Error('Failed to upload scores file');
 
         finalScoresUrl = publicUrl;
-      } else if (existingArchive) {
-        finalScoresUrl = existingArchive.scores_url;
       }
 
-      const { error: dbError } = await supabase
-        .from('tournament_archives')
-        .upsert(
-          {
-            edition: computedEdition,
-            event_date: eventDate.trim(),
-            event_number: numericEventVal, 
-            scores_url: finalScoresUrl, 
-            videos_url: videosUrl.trim() || null,
-            photos_urls: photosArray,
-            notes: notes.trim() || null
-          },
-          { onConflict: 'edition' }
-        );
-
-      if (dbError) throw dbError;
+      await api.put(`/tournament-archives/${encodeURIComponent(computedEdition)}`, {
+        event_date: eventDate.trim(),
+        event_number: numericEventVal,
+        scores_url: finalScoresUrl,
+        videos_url: videosUrl.trim() || null,
+        photos_urls: photosArray,
+        notes: notes.trim() || null,
+      });
 
       setMessage(`Saved ${computedEdition} entry successfully!`);
       setEventDate("");

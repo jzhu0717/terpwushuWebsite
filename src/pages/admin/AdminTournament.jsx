@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../../supabaseClient';
+import { api } from '../../apiClient';
 
 function utcToEasternInput(utcString) {
   if (!utcString) return "";
@@ -76,13 +76,7 @@ export default function AdminTournament() {
     useEffect(() => {
         async function loadTournamentSettings() {
             try {
-                const { data, error } = await supabase
-                    .from('tournament_webpage')
-                    .select('*')
-                    .eq('id', 1)
-                    .single();
-
-                if (error && error.code !== 'PGRST116') throw error;
+                const data = await api.get('/tournament-webpage');
                 if (data) {
                     const normalizedData = {};
                     Object.keys(data).forEach(key => {
@@ -127,11 +121,7 @@ export default function AdminTournament() {
         setMessage({ type: '', text: '' });
 
         try {
-            const { error } = await supabase
-                .from('tournament_webpage')
-                .upsert({ id: 1, ...form });
-
-            if (error) throw error;
+            await api.put('/tournament-webpage', form);
             setMessage({ type: 'success', text: 'Tournament page settings saved successfully!' });
         } catch (err) {
             console.error("Failed to save settings:", err);
@@ -216,7 +206,6 @@ export default function AdminTournament() {
                                     required 
                                 />
                             </div>
-
                             <div className="flex flex-col gap-1">
                                 <label className="text-xs font-bold text-gray-600">Early Registration Ends</label>
                                 <input 
@@ -228,7 +217,6 @@ export default function AdminTournament() {
                                     required 
                                 />
                             </div>
-
                             <div className="flex flex-col gap-1">
                                 <label className="text-xs font-bold text-gray-600">Late Registration Ends</label>
                                 <input 
@@ -243,6 +231,32 @@ export default function AdminTournament() {
 
                         </div>
                     </div>
+
+                    <div className="pt-4">
+                        <h3 className="text-sm font-bold text-red-800 uppercase tracking-wider mb-3">
+                            Prices
+                        </h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-100">
+                            <div className="flex flex-col gap-1">
+                                <label className="text-xs text-gray-600">Early Reg Price ($)</label>
+                                <input type="number" name="early_reg_price" value={form.early_reg_price} onChange={handleChange} placeholder="ex: 65" className="p-2 border rounded text-sm" required />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                                <label className="text-xs text-gray-600">Late Fee ($)</label>
+                                <input type="number" name="late_fee" value={form.late_fee} onChange={handleChange} placeholder="ex: 20" className="p-2 border rounded text-sm" required />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                                <label className="text-xs text-gray-600">Collegiate Discount ($)</label>
+                                <input type="number" name="collegiate_discount" value={form.collegiate_discount} onChange={handleChange} placeholder="ex: 15" className="p-2 border rounded text-sm" required />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                                <label className="text-xs text-gray-600">Per Event Fee ($)</label>
+                                <input type="number" name="price_per_event" value={form.price_per_event} onChange={handleChange} placeholder="ex: 10" className="p-2 border rounded text-sm" required />
+                            </div>
+                        </div>
+                    </div>
+                        
+                    
 
                     {/* Event Times / Schedule */}
                     <div>

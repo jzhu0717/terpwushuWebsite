@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../../supabaseClient';
+import { api } from '../../apiClient';
 
 export default function AdminAnnouncements() {
     const [announcements, setAnnouncements] = useState([]);
@@ -19,12 +19,12 @@ export default function AdminAnnouncements() {
 
     // Fetch announcements from database
     const fetchAnnouncements = async () => {
-        const { data, error } = await supabase
-            .from('announcements')
-            .select('*')
-            .order('created_at', { ascending: false });
-        
-        if (!error && data) setAnnouncements(data);
+        try {
+            const data = await api.get('/announcements');
+            setAnnouncements(data);
+        } catch (err) {
+            console.error('Error loading announcements:', err);
+        }
     };
 
     useEffect(() => {
@@ -63,16 +63,13 @@ export default function AdminAnnouncements() {
             return showMessage("Author name can only contain letters, numbers, and spaces!", true);
         }
 
-        const { error } = await supabase
-            .from('announcements')
-            .insert([{ title, author, content }]);
-
-        if (error) {
-            showMessage(error.message, true);
-        } else {
+        try {
+            await api.post('/announcements', { title, author, content });
             showMessage("New post successfully created!");
             setTitle(''); setAuthor(''); setContent('');
             fetchAnnouncements();
+        } catch (err) {
+            showMessage(err.message, true);
         }
     };
 
@@ -85,16 +82,12 @@ export default function AdminAnnouncements() {
             return showMessage("Author name can only contain letters, numbers, and spaces!", true);
         }
 
-        const { error } = await supabase
-            .from('announcements')
-            .update({ title: editTitle, author: editAuthor, content: editContent })
-            .eq('id', selectedId);
-
-        if (error) {
-            showMessage(error.message, true);
-        } else {
+        try {
+            await api.put(`/announcements/${selectedId}`, { title: editTitle, author: editAuthor, content: editContent });
             showMessage("Post successfully updated!");
             fetchAnnouncements();
+        } catch (err) {
+            showMessage(err.message, true);
         }
     };
 
@@ -102,17 +95,13 @@ export default function AdminAnnouncements() {
     const handleDeletePost = async () => {
         if (!selectedId || !window.confirm("Are you sure you want to delete this post?")) return;
 
-        const { error } = await supabase
-            .from('announcements')
-            .delete()
-            .eq('id', selectedId);
-
-        if (error) {
-            showMessage(error.message, true);
-        } else {
+        try {
+            await api.delete(`/announcements/${selectedId}`);
             showMessage("Post permanently removed.");
             setSelectedId(''); setEditTitle(''); setEditAuthor(''); setEditContent('');
             fetchAnnouncements();
+        } catch (err) {
+            showMessage(err.message, true);
         }
     };
     

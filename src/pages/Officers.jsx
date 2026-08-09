@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../supabaseClient';
+import { api } from '../apiClient';
 
 export default function Officers() {
     const [groupedOfficers, setGroupedOfficers] = useState({});
@@ -18,12 +18,7 @@ export default function Officers() {
     const fetchOfficers = async () => {
         try {
             setLoading(true);
-            const { data, error } = await supabase
-                .from('officers')
-                .select('*')
-                .order('sort_order', { ascending: true });
-
-            if (error) throw error;
+            const data = await api.get('/officers');
 
             if (!data || data.length === 0) {
                 setGroupedOfficers({});

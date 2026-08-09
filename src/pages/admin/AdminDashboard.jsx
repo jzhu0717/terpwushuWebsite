@@ -4,13 +4,30 @@ import AdminPractices from './AdminPractices';
 import AdminAnnouncements from './AdminAnnouncements';
 import AdminTournament from './AdminTournament';
 import AdminTournamentArchives from './AdminTournamentArchives';
-import { supabase } from '../../supabaseClient';
+import Registrations from './RegList';
+import EventOrder from './EventBuilder';
+import CheckIn from './UWGCheckin';
+import { api } from '../../apiClient';
 
-export default function AdminDashboard() {
+export default function AdminDashboard({ onLogout }) {
     const [activeTab, setActiveTab] = useState('announcements');
     const handleLogout = async () => {
-        await supabase.auth.signOut();
+        try {
+            await api.post('/auth/logout');
+        } finally {
+            onLogout();
+        }
     };
+
+    const [uwgDropdownOpen, setUwgDropdownOpen] = useState(false);
+
+    const uwgPages = [
+        { id: 'registration-list', label: 'Registrations' }, // Complete list of tournament registrations & event distributions, can add / edit competitors here too
+        { id: 'event-builder', label: 'EventOrder' }, // Event order builder, (group judging methods and shows ring conflicts)
+        { id: 'check-in', label: 'CheckIn' }, // Check in competitors at the check in table. Use during competiton day.
+        ];
+
+    const isUwgActive = uwgPages.some(p => p.id === activeTab);
     return (
         <div
 			className="min-h-screen"
@@ -26,6 +43,41 @@ export default function AdminDashboard() {
                     <button onClick={() => setActiveTab('practices')} className={`text-sm transition-all ${activeTab === 'practices' ? 'underline font-semibold text-red-200' : 'hover:text-red-200'}`}>Edit Practice Times</button>
                     <button onClick={() => setActiveTab('officers')} className={`text-sm transition-all ${activeTab === 'officers' ? 'underline font-semibold text-red-200' : 'hover:text-red-200'}`}>Edit Officers</button>      
                     <button onClick={() => setActiveTab('tournament')} className={`text-sm transition-all ${activeTab === 'tournament' ? 'underline font-semibold text-red-200' : 'hover:text-red-200'}`}>Edit Tournament</button>      
+                    <div className="relative">
+                        <button
+                            onClick={() => setUwgDropdownOpen(!uwgDropdownOpen)}
+                            onBlur={() => setTimeout(() => setUwgDropdownOpen(false), 150)}
+                            className={`text-sm transition-all flex items-center gap-1 ${isUwgActive ? 'underline font-semibold text-red-200' : 'hover:text-red-200'}`}
+                        >
+                            UWG Actions
+                            <svg
+                                className={`w-3 h-3 transition-transform ${uwgDropdownOpen ? 'rotate-180' : ''}`}
+                                fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                            >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+
+                        {uwgDropdownOpen && (
+                            <div className="absolute top-full left-0 mt-1 bg-neutral-900 border border-neutral-700 rounded-md shadow-lg py-1 min-w-[140px] z-50">
+                                {uwgPages.map((page) => (
+                                    <button
+                                        key={page.id}
+                                        onClick={() => {
+                                            setActiveTab(page.id);
+                                            setUwgDropdownOpen(false);
+                                        }}
+                                        className={`block w-full text-left px-3 py-2 text-sm transition-all ${
+                                            activeTab === page.id ? 'text-red-200 font-semibold' : 'text-white hover:text-red-200 hover:bg-neutral-800'
+                                        }`}
+                                    >
+                                        {page.label}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
                     <button onClick={() => setActiveTab('tournament-archives')} className={`text-sm transition-all ${activeTab === 'tournament-archives' ? 'underline font-semibold text-red-200' : 'hover:text-red-200'}`}>Edit Tournament Archives</button>      
                     <button 
                         onClick={handleLogout}
@@ -49,6 +101,9 @@ export default function AdminDashboard() {
                 {activeTab === 'officers' && <AdminOfficers />}
                 {activeTab === 'tournament' && <AdminTournament />}
                 {activeTab === 'tournament-archives' && <AdminTournamentArchives />}
+                {activeTab === 'registration-list' && <Registrations />}
+                {activeTab === 'event-builder' && <EventOrder />}
+                {activeTab === 'check-in' && <CheckIn />}
             </div>
         </div>
     );

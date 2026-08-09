@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../../supabaseClient';
+import { api } from '../../apiClient';
 
 const DAYS_OF_WEEK = [
    'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
@@ -17,16 +17,18 @@ export default function AdminPractices() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
 
-  // 1. Fetch current schedule from Supabase on mount
+  // Helper to flash alert banners
+  const showStatus = (text, type) => {
+    setMessage({ text, type });
+    setTimeout(() => setMessage({ text: '', type: '' }), 4000);
+  };
+
+  // 1. Fetch current schedule on mount
   useEffect(() => {
     async function fetchSchedule() {
       try {
         setLoading(true);
-        const { data, error } = await supabase
-          .from('practices')
-          .select('*');
-
-        if (error) throw error;
+        const data = await api.get('/practices');
 
         if (data && data.length > 0) {
           // Clone our blank base schedule
@@ -56,12 +58,6 @@ export default function AdminPractices() {
 
     fetchSchedule();
   }, []);
-
-  // Helper to flash alert banners
-  const showStatus = (text, type) => {
-    setMessage({ text, type });
-    setTimeout(() => setMessage({ text: '', type: '' }), 4000);
-  };
 
   // 2. Handle state updates when inputs change
   const handleCheckboxChange = (day) => {
@@ -97,21 +93,8 @@ export default function AdminPractices() {
           };
         });
 
-      // Simple sync approach: clear out the old schedule and insert the fresh configured one
-      const { error: deleteError } = await supabase
-        .from('practices')
-        .delete()
-        .neq('id', -1); // Deletes all rows safely
-
-      if (deleteError) throw deleteError;
-
-      if (activeRows.length > 0) {
-        const { error: insertError } = await supabase
-          .from('practices')
-          .insert(activeRows);
-
-        if (insertError) throw insertError;
-      }
+      // Simple sync approach: server clears out the old schedule and inserts the fresh configured one
+      await api.put('/practices', { practices: activeRows });
 
       showStatus('Practice schedule updated successfully!', 'success');
     } catch (err) {

@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { supabase } from '../supabaseClient'; 
+import { api } from '../apiClient';
 
 const SLIDESHOW_IMAGES = [
-    "/joining/chris.jpg",
     "/joining/BryanJoshDavid15.jpg",
     "/joining/rachava.jpg",
     "/joining/sumner.jpg",
@@ -62,11 +61,7 @@ export default function Joining() {
         async function fetchActivePractices() {
             try {
                 setLoadingPractices(true);
-                const { data, error } = await supabase
-                    .from('practices')
-                    .select('*');
-
-                if (error) throw error;
+                const data = await api.get('/practices');
 
                 if (data) {
                     const sortedData = data.sort((a, b) => 

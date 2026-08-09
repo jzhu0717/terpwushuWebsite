@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { supabase } from '../../supabaseClient';
+import { api } from '../../apiClient';
 
-export default function AdminLogin() {
+export default function AdminLogin({ onLoginSuccess }) {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -12,20 +12,11 @@ export default function AdminLogin() {
         setLoading(true);
         setErrorMessage('');
 
-        // "admin@tw.local" under the hood.
-        const synthesizedEmail = `${username.trim().toLowerCase()}@tw.local`;
-
-        const { error } = await supabase.auth.signInWithPassword({
-            email: synthesizedEmail,
-            password: password,
-        });
-
-        if (error) {
-            const clearMessage = error.message === "Invalid login credentials" 
-                ? "Invalid username or password." 
-                : error.message;
-                
-            setErrorMessage(clearMessage);
+        try {
+            await api.post('/auth/login', { username: username.trim(), password });
+            onLoginSuccess();
+        } catch (error) {
+            setErrorMessage(error.message);
             setLoading(false);
         }
     };

@@ -1,30 +1,24 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../../supabaseClient';
+import { api } from '../../apiClient';
 import AdminLogin from './AdminLogin';
 import AdminDashboard from './AdminDashboard';
 
 export default function AdminGatekeeper() {
-    const [session, setSession] = useState(null);
+    const [loggedIn, setLoggedIn] = useState(false);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         window.scrollTo({
             top: 0,
-            behavior: 'instant' 
+            behavior: 'instant'
         });
-    }, [session]);
+    }, [loggedIn]);
 
     useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-            setLoading(false);
-        });
-
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session);
-        });
-
-        return () => subscription.unsubscribe();
+        api.get('/auth/session')
+            .then((data) => setLoggedIn(!!data.loggedIn))
+            .catch(() => setLoggedIn(false))
+            .finally(() => setLoading(false));
     }, []);
 
     // While waiting to check if user is logged in, show a blank or loading state
@@ -36,5 +30,7 @@ export default function AdminGatekeeper() {
         );
     }
 
-    return session ? <AdminDashboard /> : <AdminLogin />;
+    return loggedIn
+        ? <AdminDashboard onLogout={() => setLoggedIn(false)} />
+        : <AdminLogin onLoginSuccess={() => setLoggedIn(true)} />;
 }

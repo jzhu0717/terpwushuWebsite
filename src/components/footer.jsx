@@ -20,7 +20,7 @@ export default function Footer() {
         </div>
         <div className="flex flex-col text-sm">
           <li><Link to="/admin/#">Admin Panel</Link></li>
-          <span>UWG Panel</span>
+          {/* <span>UWG Panel</span> */}
         </div>
       </div>
     </footer>

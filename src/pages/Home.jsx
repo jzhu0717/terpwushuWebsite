@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { useLocation, Link } from "react-router-dom"; 
-import { supabase } from '../supabaseClient';
+import { useLocation, Link } from "react-router-dom";
+import { api } from '../apiClient';
 
 
 const SLIDESHOW_IMAGES = [
@@ -24,14 +24,8 @@ export default function Home() {
   useEffect(() => {
     const getLiveAnnouncements = async () => {
       try {
-        const { data, error } = await supabase
-          .from("announcements")
-          .select("*")
-          .order("created_at", { ascending: false });
-
-        if (!error && data) {
-          setAnnouncements(data);
-        }
+        const data = await api.get("/announcements");
+        setAnnouncements(data);
       } catch (err) {
         console.error("Failed to sync announcements:", err);
       } finally {

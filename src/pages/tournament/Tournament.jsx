@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import emailjs from '@emailjs/browser';
 import ReCAPTCHA from 'react-google-recaptcha';
 import { Link, useLocation } from "react-router-dom";
-import { supabase } from '../../supabaseClient';
+import { api } from '../../apiClient';
 
 const renderPhotoLinks = (photosUrls) => {
     if (!photosUrls || photosUrls.length === 0) {
@@ -45,13 +45,7 @@ export default function Tournament() {
 	useEffect(() => {
         async function fetchSettings() {
             try {
-                const { data, error } = await supabase
-                    .from('tournament_webpage')
-                    .select('*')
-                    .eq('id', 1)
-                    .single();
-                
-                if (error) throw error;
+                const data = await api.get('/tournament-webpage');
                 setSettings(data);
             } catch (err) {
                 console.error("Error loading tournament details:", err);
@@ -187,13 +181,11 @@ export default function Tournament() {
     
     useEffect(() => {
         const fetchArchives = async () => {
-            const { data, error } = await supabase
-            .from('tournament_archives')
-            .select('*')
-            .order('event_number', { ascending: false });
-            
-            if (!error && data) {
-            setArchives(data);
+            try {
+                const data = await api.get('/tournament-archives');
+                setArchives(data);
+            } catch (err) {
+                console.error("Error loading tournament archives:", err);
             }
         };
         fetchArchives();
@@ -395,6 +387,10 @@ export default function Tournament() {
                                                                         <div>
                                                                             <span className="font-bold text-gray-700">Early Registration Ends:</span>{' '}
                                                                             {earlyEnds.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                                                                            <br></br>
+                                                                            For collegiate competitors, the early registration fee is $50 for the first event.
+                                                                            For non-collegiate competitors, the early registration fee is $75 for the first event.
+                                                                            Each additional event costs $20
                                                                         </div>
                                                                     )}
                                                                     {lateEnds && (
@@ -490,7 +486,7 @@ export default function Tournament() {
                                         
 											{isLivestreamAvailable && (
 												<div className="mt-4 pt-4 border-t border-red-200 text-left">
-													<h4 className="font-bold text-red-800 text-sm uppercase tracking-wider mb-2 text-center">🔴 Live Streams</h4>
+													<h4 className="font-bold text-red-800 text-sm uppercase tracking-wider mb-2 text-center">Live Streams</h4>
 													<div className="flex flex-col gap-1 items-center justify-center">
 														{settings.livestream_ring_1 && <a href={settings.livestream_ring_1} target="_blank" rel="noreferrer" className="text-blue-600 underline text-sm font-medium">Watch Ring 1 Live</a>}
 														{settings.livestream_ring_2 && <a href={settings.livestream_ring_2} target="_blank" rel="noreferrer" className="text-blue-600 underline text-sm font-medium">Watch Ring 2 Live</a>}
