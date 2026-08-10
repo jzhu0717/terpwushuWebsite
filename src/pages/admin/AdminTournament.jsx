@@ -66,7 +66,9 @@ export default function AdminTournament() {
         early_reg_price: '',
         late_fee: '',
         collegiate_discount: '',
-        price_per_event: ''
+        price_per_event: '',
+        grand_champion_enabled: false,
+        grand_champion_price: ''
     });
   
     const [loading, setLoading] = useState(true);
@@ -113,6 +115,10 @@ export default function AdminTournament() {
 
     const handleChange = (e) => {
         setForm({ ...form, [e.target.name]: e.target.value });
+    };
+
+    const handleCheckboxChange = (e) => {
+        setForm({ ...form, [e.target.name]: e.target.checked });
     };
 
     const handleSave = async (e) => {
@@ -179,12 +185,12 @@ export default function AdminTournament() {
                     {/* Core Header Data */}
                     <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="flex flex-col gap-1">
-                            <label className="text-xs font-bold text-gray-700 uppercase">Event Number (##th, ##st, ##nd, ##rd)</label>
-                            <input type="text" name="event_number" value={form.event_number} onChange={handleChange} placeholder="e.g., 19th" className="p-2 border rounded text-sm w-full" required />
+                            <label className="text-xs font-bold text-gray-700 uppercase">Event Number</label>
+                            <input type="text" name="event_number" value={form.event_number} onChange={handleChange} placeholder="##th" className="p-2 border rounded text-sm w-full" required />
                         </div>
                         <div className="flex flex-col gap-1">
                             <label className="text-xs font-bold text-gray-700 uppercase">UWG Day & Date </label>
-                            <input type="text" name="uwg_day" value={form.uwg_day} onChange={handleChange} placeholder="e.g., Saturday, November 15th, 2025" className="p-2 border rounded text-sm w-full" required />
+                            <input type="text" name="uwg_day" value={form.uwg_day} onChange={handleChange} placeholder="e.g., Saturday, December 5th, 2026" className="p-2 border rounded text-sm w-full" required />
                         </div>
                     </div>
 
@@ -239,24 +245,51 @@ export default function AdminTournament() {
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-100">
                             <div className="flex flex-col gap-1">
                                 <label className="text-xs text-gray-600">Early Reg Price ($)</label>
-                                <input type="number" name="early_reg_price" value={form.early_reg_price} onChange={handleChange} placeholder="ex: 65" className="p-2 border rounded text-sm" required />
+                                <input type="number" name="early_reg_price" value={form.early_reg_price} onChange={handleChange} className="p-2 border rounded text-sm" required />
                             </div>
                             <div className="flex flex-col gap-1">
                                 <label className="text-xs text-gray-600">Late Fee ($)</label>
-                                <input type="number" name="late_fee" value={form.late_fee} onChange={handleChange} placeholder="ex: 20" className="p-2 border rounded text-sm" required />
+                                <input type="number" name="late_fee" value={form.late_fee} onChange={handleChange} className="p-2 border rounded text-sm" required />
                             </div>
                             <div className="flex flex-col gap-1">
                                 <label className="text-xs text-gray-600">Collegiate Discount ($)</label>
-                                <input type="number" name="collegiate_discount" value={form.collegiate_discount} onChange={handleChange} placeholder="ex: 15" className="p-2 border rounded text-sm" required />
+                                <input type="number" name="collegiate_discount" value={form.collegiate_discount} onChange={handleChange}  className="p-2 border rounded text-sm" required />
                             </div>
                             <div className="flex flex-col gap-1">
                                 <label className="text-xs text-gray-600">Per Event Fee ($)</label>
-                                <input type="number" name="price_per_event" value={form.price_per_event} onChange={handleChange} placeholder="ex: 10" className="p-2 border rounded text-sm" required />
+                                <input type="number" name="price_per_event" value={form.price_per_event} onChange={handleChange} className="p-2 border rounded text-sm" required />
                             </div>
                         </div>
                     </div>
-                        
-                    
+
+                    <div className="pt-4">
+                        <h3 className="text-sm font-bold text-red-800 uppercase tracking-wider mb-3">
+                            Grand Champion
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-100">
+                            <label className="flex items-center gap-2 text-sm text-gray-700">
+                                <input
+                                    type="checkbox"
+                                    name="grand_champion_enabled"
+                                    checked={!!form.grand_champion_enabled}
+                                    onChange={handleCheckboxChange}
+                                />
+                                Enable Grand Champion eligibility during registration
+                            </label>
+                            <div className="flex flex-col gap-1">
+                                <label className="text-xs text-gray-600">Grand Champion Fee ($)</label>
+                                <input
+                                    type="number"
+                                    name="grand_champion_price"
+                                    value={form.grand_champion_price}
+                                    onChange={handleChange}
+                                    className="p-2 border rounded text-sm"
+                                    disabled={!form.grand_champion_enabled}
+                                />
+                            </div>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">Registrants need at least 4 events selected to be eligible.</p>
+                    </div>
 
                     {/* Event Times / Schedule */}
                     <div>

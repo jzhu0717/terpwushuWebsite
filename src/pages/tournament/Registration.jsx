@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import ReCAPTCHA from "react-google-recaptcha";
-import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
+import emailjs from "@emailjs/browser";
 import { api } from '../../apiClient';
 
 const NON_COLLEGIATE_AGE_GROUPS = [
@@ -18,6 +18,16 @@ const COLLEGIATE_AGE_GROUPS = [
     "Adult I (Ages 18-30)",
     "Adult II (Ages 30+)",
 ];
+
+// Age groups that represent a competitor under 18 — drives the waiver's minor-vs-adult
+// consent text and whether the Parental/Guardian Consent Form is required.
+const MINOR_AGE_GROUPS = new Set([
+    "Child (Up to 6 Years Old)",
+    "Youth (Up to 8 Years Old)",
+    "Group C (Up to 11 Years Old)",
+    "Group B (Up to 14 Years Old)",
+    "Group A (Up to 17 Years Old)",
+]);
 
 const WUSHU_SCHOOLS = [
     "Full Circle Martial Arts Academy",
@@ -73,6 +83,42 @@ const COLLEGES = [
 ];
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const FREE_REGISTRATION_INSTITUTION = 'University of Maryland College Park';
+const GRAND_CHAMPION_MIN_EVENTS = 4;
+
+const COMPULSORY_CATEGORY_INFO = {
+    'Group A Compulsory': {
+        titleLabel: '3rd Set of International Competition Routine',
+        bodyLabel: '3rd Set of International Competition Routine Taolu',
+    },
+    'Group B Compulsory': {
+        titleLabel: '1st Set of International Competition Routine',
+        bodyLabel: '1st Set of International Competition Routine Taolu',
+    },
+    'Group C Compulsory': {
+        titleLabel: 'International Taolu 3rd Elementary Routine',
+        bodyLabel: '3rd Elementary Routine Taolu',
+    },
+};
+
+function isCategoryVisible(category, { isCollegiate, ageGroup, experienceLevel }) {
+    if (category === 'Group A Compulsory') return !isCollegiate && ageGroup === 'Group A (Up to 17 Years Old)';
+    if (category === 'Group B Compulsory') return !isCollegiate && ageGroup === 'Group B (Up to 14 Years Old)';
+    if (category === 'Group C Compulsory') return !isCollegiate && ageGroup === 'Group C (Up to 11 Years Old)';
+    if (category === 'Nandu Events') return experienceLevel === 'Advanced';
+    return true;
+}
+
+// Kept in sync with server/lib/waiverPdf.js — this is the same text baked into the
+// generated waiver PDF, shown here so registrants read it before consenting.
+const WAIVER_CLAUSES = [
+    "I fully recognize and understand that there are risks and hazards, minor and serious, associated with participation in sport club events, ranging from scrapes, bruises, lacerations, broken bones to concussions, spinal cord injuries, paralysis and, even, death. These injuries may result from crashing with other participants, being hit by equipment, or environmental conditions.",
+    "Knowing the dangers, hazards and risks associated with Wushu, I voluntarily assume all responsibility and risk of loss, damage, illness and/or injury to my person or property in any way associated with my participation in such activities.",
+    "I understand that protective equipment including, but not limited to, shin, knee, and forearm pads, head gear and gloves is recommended for the safety and protection of participants in Wushu, and I agree to wear such equipment when participating in such activity that warrants this protective equipment. However, I understand that wearing such equipment will not eliminate the risks of participation.",
+    "I understand that the rules and regulations applicable to the Terp Wushu Club and the International Wushu Federation Society are designed, in part, for the safety and protection of participants and I agree to abide by those rules and regulations.",
+    "I understand that Wushu requires a minimum level of fitness for safe participation. I also understand that Campus Recreation Services advises that participants in sport club activities have a physical examination to determine their fitness for participation, and I represent that there are no physical or other health related reasons which would render my participation in sport club activities dangerous or otherwise harmful to the health or physical well-being of myself or others. I further understand that the University of Maryland does not provide medical, health or other insurance for participants in sport club activities.",
+    "To the fullest extent permitted by law, I hereby release and forever discharge, and agree to indemnify and hold harmless, the State of Maryland, the University of Maryland, Campus Recreation Services and their officers, agents and employees from and against any and all liabilities, claims, demands and causes of action on account of any loss or injury in any way arising out of or relating to my participation in or involvement with sport club activities, or use of CRS equipment and facilities including travel thereto and therefrom, whether due to the negligence, omission, default or other action of any person or entity.",
+];
 
 const CARD_STYLE = {
     background: "rgba(255,255,255,0.82)",
@@ -140,7 +186,7 @@ export default function Registration() {
     const [events, setEvents] = useState([]);
     const [loadError, setLoadError] = useState('');
 
-    const [step, setStep] = useState('bio'); // bio | details | verify | events | payment | success
+    const [step, setStep] = useState('bio'); // bio | details | verify | events | waiver | confirm | success | duplicate
     const [error, setError] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [captchaToken, setCaptchaToken] = useState(null);
@@ -148,8 +194,9 @@ export default function Registration() {
     const [sendingCode, setSendingCode] = useState(false);
     const [verifyingCode, setVerifyingCode] = useState(false);
 
-    const [registrationId, setRegistrationId] = useState(null);
-    const [paidAmount, setPaidAmount] = useState(0);
+    const [waiverAccepted, setWaiverAccepted] = useState(false);
+    const [grandChampion, setGrandChampion] = useState(false);
+    const [finalRegistration, setFinalRegistration] = useState(null);
 
     const [bio, setBio] = useState({
         first_name: '',
@@ -172,7 +219,7 @@ export default function Registration() {
         setTimeout(() => {
             window.scrollTo({ top: 0, behavior: "smooth" });
         }, 100);
-    }, []);
+    }, [step]);
 
     useEffect(() => {
         async function load() {
@@ -198,23 +245,44 @@ export default function Registration() {
     const hasRegStarted = regBegins && now >= regBegins;
     const isEarlyBird = earlyEnds && now < earlyEnds;
     const hasRegClosed = lateEnds && now >= lateEnds;
-
     const basePrice = Number(settings?.early_reg_price || 0);
     const lateFee = Number(settings?.late_fee || 0);
     const pricePerEvent = Number(settings?.price_per_event || 0);
     const collegiateDiscount = Number(settings?.collegiate_discount || 0);
-
-    const baseCost = isEarlyBird ? basePrice : basePrice + lateFee;
-    const eventsCost = pricePerEvent * eventSelection.event_ids.length;
-    const discount = bio.collegiate_status === 'Collegiate' ? collegiateDiscount : 0;
-    const estimatedTotal = Math.max(0, baseCost + eventsCost - discount);
+    const collegiateFirstEventPrice = Math.max(0, basePrice - collegiateDiscount);
+    const grandChampionFee = Number(settings?.grand_champion_price || 0);
 
     const isCollegiate = bio.collegiate_status === 'Collegiate';
+    const isMinor = MINOR_AGE_GROUPS.has(details.age_group);
     const ageGroupOptions = isCollegiate ? COLLEGIATE_AGE_GROUPS : NON_COLLEGIATE_AGE_GROUPS;
     const institutionOptions = isCollegiate ? COLLEGES : WUSHU_SCHOOLS;
     const institutionLabel = isCollegiate ? 'College' : 'Wushu School';
 
-    const groupedEvents = events.reduce((acc, ev) => {
+    const isFreeUmdRegistration = isCollegiate && details.institution === FREE_REGISTRATION_INSTITUTION;
+
+    const visibleEvents = events.filter((ev) =>
+        isCategoryVisible(ev.category, { isCollegiate, ageGroup: details.age_group, experienceLevel: bio.experience_level })
+    );
+    const visibleEventIds = new Set(visibleEvents.map((ev) => ev.id));
+    // Drops any selection that's no longer visible (e.g. registrant went back and changed
+    // age group/experience level after picking events) so pricing/validation never counts it.
+    const selectedEventIds = eventSelection.event_ids.filter((id) => visibleEventIds.has(id));
+    const selectedEvents = visibleEvents.filter((ev) => selectedEventIds.includes(ev.id));
+
+    const grandChampionEligible = selectedEventIds.length >= GRAND_CHAMPION_MIN_EVENTS;
+    const grandChampionOffered = !!settings?.grand_champion_enabled && !isFreeUmdRegistration;
+
+    const discount = isCollegiate ? collegiateDiscount : 0;
+    const firstEventBase = Math.max(0, basePrice - discount);
+    const firstEventPriced = isEarlyBird ? firstEventBase : firstEventBase + lateFee;
+    const additionalEventsCount = Math.max(0, selectedEventIds.length - 1);
+    const additionalEventsCost = additionalEventsCount * pricePerEvent;
+    const grandChampionCost = grandChampionOffered && grandChampion && grandChampionEligible ? grandChampionFee : 0;
+    const estimatedTotal = isFreeUmdRegistration
+        ? 0
+        : Math.max(0, firstEventPriced + additionalEventsCost + grandChampionCost);
+
+    const groupedEvents = visibleEvents.reduce((acc, ev) => {
         const key = ev.category || 'Events';
         if (!acc[key]) acc[key] = [];
         acc[key].push(ev);
@@ -322,12 +390,51 @@ export default function Registration() {
         }));
     };
 
-    const handleEventsSubmit = async (e) => {
+    const handleEventsSubmit = (e) => {
         e.preventDefault();
-        if (eventSelection.event_ids.length === 0) {
+        if (selectedEventIds.length === 0) {
             setError('Please select at least one event.');
             return;
         }
+        setError('');
+        setStep('waiver');
+    };
+
+    const handleWaiverSubmit = (e) => {
+        e.preventDefault();
+        if (!waiverAccepted) {
+            setError('Please read and accept the terms and conditions in its entirety.');
+            return;
+        }
+        setError('');
+        setStep('confirm');
+    };
+
+    const sendConfirmationEmail = async (registration) => {
+        const serviceId = import.meta.env.VITE_EMAILJS_CONFIRMATION_SERVICE_ID;
+        const templateId = import.meta.env.VITE_EMAILJS_CONFIRMATION_TEMPLATE_ID;
+        const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+
+        try {
+            await emailjs.send(serviceId, templateId, {
+                to_email: registration.email,
+                to_name: `${registration.first_name} ${registration.last_name}`,
+                age_group: registration.age_group,
+                events: selectedEvents.map((ev) => ev.name).join(', '),
+                amount_due: registration.amount_due.toFixed(2),
+                payment_status: registration.payment_status,
+                event_number: settings?.event_number || '',
+                uwg_day: settings?.uwg_day || '',
+            }, publicKey);
+        } catch (err) {
+            // Registration already succeeded server-side — a failed confirmation email
+            // shouldn't block the registrant from seeing their success page.
+            console.error('Failed to send confirmation email:', err);
+        }
+    };
+
+    const handleFinalRegister = async (e) => {
+        e.preventDefault();
         if (!captchaToken) {
             setError('Please complete the reCAPTCHA check.');
             return;
@@ -338,7 +445,7 @@ export default function Registration() {
         try {
             const institution = details.institution === 'Other' ? details.institution_other.trim() : details.institution;
 
-            const regRow = await api.post('/registrations', {
+            const registration = await api.post('/registrations', {
                 first_name: bio.first_name.trim(),
                 last_name: bio.last_name.trim(),
                 email: bio.email.trim(),
@@ -348,15 +455,22 @@ export default function Registration() {
                 age_group: details.age_group,
                 institution,
                 amount_due: estimatedTotal,
+                event_ids: selectedEventIds,
+                waiver_accepted: true,
+                parental_consent_required: isMinor,
+                grand_champion: grandChampionOffered && grandChampion && grandChampionEligible,
             });
 
-            await api.post(`/registrations/${regRow.id}/events`, { event_ids: eventSelection.event_ids });
-
-            setRegistrationId(regRow.id);
-            setStep('payment');
+            setFinalRegistration(registration);
+            await sendConfirmationEmail(registration);
+            setStep('success');
         } catch (err) {
-            console.error('Error submitting registration:', err);
-            setError('Something went wrong submitting your registration. Please try again.');
+            if (err.data?.duplicate) {
+                setStep('duplicate');
+            } else {
+                console.error('Error submitting registration:', err);
+                setError('Something went wrong submitting your registration. Please try again.');
+            }
         } finally {
             setSubmitting(false);
         }
@@ -408,15 +522,20 @@ export default function Registration() {
                             color: "#444",
                             maxWidth: "75%",
                             margin: "0 auto",
-                            textAlign: "left",
+                            textAlign: "center",
                         }}
                     >
-                        Welcome to the registration site for the {" "}
-                        {settings?.event_number} {/* event number here, ## + th / st / nd / rd  */}
-                        Annual University Wushu Games organized by TerpWushu at the University of Maryland!
+                        Welcome to the registration site for the {' '} {settings?.event_number} {' '} Annual University Wushu Games organized by TerpWushu at the University of Maryland!
                         <br /><br />
                         <strong>Early Registration</strong> ends {' '}
-                            {earlyEnds.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                            {earlyEnds ? earlyEnds.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : 'TBA'}
+                        <br></br>
+                        <strong>Late Registration</strong> ends {' '}
+                            {lateEnds ? lateEnds.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : 'TBA'}
+                        <br></br>
+                        For collegiate competitors, the early registration fee is ${collegiateFirstEventPrice} for the first event.{' '}
+                        <br></br>For non-collegiate competitors, the early registration fee is ${basePrice} for the first event.{' '}
+                        <br></br>Each additional event costs ${pricePerEvent}
                     </div>
 
                 <div style={{ maxWidth: "560px", width: "100%" }}>
@@ -452,7 +571,7 @@ export default function Registration() {
                         <>
                             {step === 'bio' && (
                                 <form onSubmit={handleBioSubmit} className="flex flex-col gap-4" style={CARD_STYLE}>
-                                    <h2 style={HEADING_STYLE}>Step 1 of 4: Your Information</h2>
+                                    <h2 style={HEADING_STYLE}>Step 1 of 5: Your Information</h2>
 
                                     <div className="flex flex-col gap-1">
                                         <label style={LABEL_STYLE}>First Name</label>
@@ -489,7 +608,7 @@ export default function Registration() {
 
                             {step === 'details' && (
                                 <form onSubmit={handleDetailsSubmit} className="flex flex-col gap-4" style={CARD_STYLE}>
-                                    <h2 style={HEADING_STYLE}>Step 2 of 4: Division & {institutionLabel}</h2>
+                                    <h2 style={HEADING_STYLE}>Step 2 of 5: Division & {institutionLabel}</h2>
 
                                     <div className="flex flex-col gap-1">
                                         <label style={LABEL_STYLE}>Age Group</label>
@@ -614,28 +733,229 @@ export default function Registration() {
 
                             {step === 'events' && (
                                 <form onSubmit={handleEventsSubmit} className="flex flex-col gap-4" style={CARD_STYLE}>
-                                    <h2 style={HEADING_STYLE}>Step 3 of 4: Select Events</h2>
+                                    <h2 style={HEADING_STYLE}>Step 3 of 5: Select Events</h2>
 
                                     <div className="flex flex-col gap-2">
                                         {events.length === 0 ? (
                                             <p className="text-zinc-400 text-sm">No events are available to register for yet. Please check back soon.</p>
                                         ) : (
-                                            Object.entries(groupedEvents).map(([category, categoryEvents]) => (
-                                                <div key={category} className="flex flex-col gap-1 mb-2">
-                                                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#8B1A1A', textTransform: 'uppercase' }}>{category}</span>
-                                                    {categoryEvents.map((ev) => (
-                                                        <label key={ev.id} className="flex items-center gap-2" style={{ fontSize: '15px', color: '#333', cursor: 'pointer' }}>
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={eventSelection.event_ids.includes(ev.id)}
-                                                                onChange={() => toggleEvent(ev.id)}
-                                                            />
-                                                            {ev.name}
-                                                        </label>
-                                                    ))}
-                                                </div>
-                                            ))
+                                            Object.entries(groupedEvents).map(([category, categoryEvents]) => {
+                                                const compulsoryInfo = COMPULSORY_CATEGORY_INFO[category];
+                                                return (
+                                                    <div key={category} className="flex flex-col gap-1 mb-2">
+                                                        <span style={{ fontSize: '13px', fontWeight: 700, color: '#8B1A1A', textTransform: 'uppercase' }}>
+                                                            {compulsoryInfo ? `${category} (${compulsoryInfo.titleLabel})` : category}
+                                                        </span>
+                                                        {compulsoryInfo && (
+                                                            <p style={{ fontSize: '12px', color: '#666', lineHeight: 1.6, margin: '0 0 0.25rem' }}>
+                                                                These events will be conducted in accordance with the{' '}
+                                                                <a
+                                                                    href="/docs/WUSHU-TAOLU-COMPETITION-RULES-AND-JUDGING-METHODS-2024.pdf"
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    style={{ color: '#1A73E8', textDecoration: 'underline' }}
+                                                                >
+                                                                    IWUF Rules for International Wushu Taolu Competition (2024)
+                                                                </a>{' '}
+                                                                and utilize the Non-Degree of Difficulty Scoring Method, comprising of
+                                                                <br></br>- A Score (Quality of Movements Scoring) &
+                                                                <br></br>- B Score (Overall Performance Scoring) only.
+                                                                {' '}<br></br>There is no time requirement for these events.
+                                                                {' '}<br></br>These events are ONLY for the taolu from the {compulsoryInfo.bodyLabel}.
+                                                                <br></br>Additional event selections are available in the next section.
+                                                            </p>
+                                                        )}
+                                                        {category === 'Nandu Events' && (
+                                                            <div style={{ fontSize: '12px', color: '#666', lineHeight: 1.6, margin: '0 0 0.25rem' }}>
+                                                                Nandu (Degree of Difficulty) scoring based on 3 categories that are judged separately by different judging panels:
+                                                                <ul style={{ margin: '0.25rem 0', paddingLeft: '1.25rem' }}>
+                                                                    - A Score (Quality of Movements Scoring)
+                                                                    <br></br>- B Score (Overall Performance Scoring)
+                                                                    <br></br>- C Score (Evaluation of Nandu)
+                                                                </ul>
+                                                                These events will be conducted in accordance with the{' '}
+                                                                <a
+                                                                    href="/docs/WUSHU-TAOLU-COMPETITION-RULES-AND-JUDGING-METHODS-2024.pdf"
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    style={{ color: '#1A73E8', textDecoration: 'underline' }}
+                                                                >
+                                                                    IWUF Rules for International Wushu Taolu Competition <strong>(2024 Rules)</strong>
+                                                                </a>
+                                                                <br />
+                                                                <strong>NEW: Nandu Events are now open age.</strong>
+                                                            </div>
+                                                        )}
+                                                        {categoryEvents.some((ev) => ev.subcategory) ? (
+                                                            Object.entries(
+                                                                categoryEvents.reduce((acc, ev) => {
+                                                                    const key = ev.subcategory || 'Other';
+                                                                    if (!acc[key]) acc[key] = [];
+                                                                    acc[key].push(ev);
+                                                                    return acc;
+                                                                }, {})
+                                                            ).map(([subcategory, subcategoryEvents]) => (
+                                                                <div key={subcategory} className="flex flex-col gap-1 mb-1">
+                                                                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#8B1A1A' }}>{subcategory}</span>
+                                                                    {subcategoryEvents.map((ev) => (
+                                                                        <label key={ev.id} className="flex items-center gap-2 ml-2" style={{ fontSize: '15px', color: '#333', cursor: 'pointer' }}>
+                                                                            <input
+                                                                                type="checkbox"
+                                                                                checked={eventSelection.event_ids.includes(ev.id)}
+                                                                                onChange={() => toggleEvent(ev.id)}
+                                                                            />
+                                                                            {ev.name}
+                                                                        </label>
+                                                                    ))}
+                                                                </div>
+                                                            ))
+                                                        ) : (
+                                                            categoryEvents.map((ev) => (
+                                                                <label key={ev.id} className="flex items-center gap-2" style={{ fontSize: '15px', color: '#333', cursor: 'pointer' }}>
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={eventSelection.event_ids.includes(ev.id)}
+                                                                        onChange={() => toggleEvent(ev.id)}
+                                                                    />
+                                                                    {ev.name}
+                                                                </label>
+                                                            ))
+                                                        )}
+                                                    </div>
+                                                );
+                                            })
                                         )}
+                                    </div>
+
+                                    <StatusBanner status={{ type: 'error', message: error }} />
+
+                                    <div className="flex gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => { setError(''); setStep('details'); }}
+                                            style={{ background: '#fff', color: '#a12222', padding: '0.75rem', borderRadius: '6px', fontWeight: 600, border: '1px solid #a12222', cursor: 'pointer', flex: '0 0 auto' }}
+                                        >
+                                            Back
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            style={{ background: '#a12222', color: '#fff', padding: '0.75rem', borderRadius: '6px', fontWeight: 600, border: 'none', cursor: 'pointer', flex: '1 1 auto' }}
+                                        >
+                                            Continue
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
+
+                            {step === 'waiver' && (
+                                <form onSubmit={handleWaiverSubmit} className="flex flex-col gap-4" style={CARD_STYLE}>
+                                    <h2 style={HEADING_STYLE}>Step 4 of 5: {settings?.event_number} Annual Wushu Games Waiver</h2>
+
+                                    <p style={{ fontSize: '0.875rem', color: '#333', lineHeight: 1.7, textAlign: 'justify' }}>
+                                        I, <strong>{bio.first_name} {bio.last_name}</strong>, desire to participate in the {settings?.event_number} Annual University Wushu Games
+                                        {settings?.uwg_day ? ` on ${settings.uwg_day}` : ''}. In consideration of being permitted to participate in such sport club activities,
+                                        I, for myself, my heirs, personal representative(s) and assigns hereby represent and agree as follows:
+                                    </p>
+
+                                    <ol style={{ fontSize: '0.8125rem', color: '#333', lineHeight: 1.6, textAlign: 'justify', paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                        {WAIVER_CLAUSES.map((clause, i) => (
+                                            <li key={i}>{clause}</li>
+                                        ))}
+                                    </ol>
+
+                                    <label className="flex items-start gap-2" style={{ fontSize: '13px', color: '#333', cursor: 'pointer' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={waiverAccepted}
+                                            onChange={(e) => setWaiverAccepted(e.target.checked)}
+                                            style={{ marginTop: '3px' }}
+                                        />
+                                        <span>
+                                            <strong>YES! </strong>
+                                            {isMinor
+                                                ? 'I ACKNOWLEDGE THAT IF I AM UNDER 18 YEARS OF AGE, I MUST FILL OUT A WAIVER AND OBTAIN THE SIGNATURE OF MY PARENT/LEGAL GUARDIAN. OTHERWISE I AGREE TO FORFEIT MY POSITION IN THE COMPETITION.'
+                                                : 'I CERTIFY THAT I AM 18 YEARS OF AGE OR OLDER AND THAT I HAVE READ AND FULLY UNDERSTAND THIS RELEASE AND INFORMED CONSENT FORM AND I SIGN IT VOLUNTARILY WITH FULL KNOWLEDGE OF ITS SIGNIFICANCE.'}
+                                        </span>
+                                    </label>
+
+                                    {isMinor && waiverAccepted && (
+                                        <div className="p-3 bg-amber-50 text-amber-800 rounded-lg text-sm border border-amber-200">
+                                            Please also download, complete, and bring the{' '}
+                                            <a
+                                                href="/docs/Parental-Consent.pdf"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                style={{ color: '#1A73E8', textDecoration: 'underline' }}
+                                            >
+                                                Parental/Guardian Consent Form
+                                            </a>{' '}
+                                            on competition day.
+                                        </div>
+                                    )}
+
+                                    <StatusBanner status={{ type: 'error', message: error }} />
+
+                                    <div className="flex gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => { setError(''); setStep('events'); }}
+                                            style={{ background: '#fff', color: '#a12222', padding: '0.75rem', borderRadius: '6px', fontWeight: 600, border: '1px solid #a12222', cursor: 'pointer', flex: '0 0 auto' }}
+                                        >
+                                            Back
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            style={{ background: '#a12222', color: '#fff', padding: '0.75rem', borderRadius: '6px', fontWeight: 600, border: 'none', cursor: 'pointer', flex: '1 1 auto' }}
+                                        >
+                                            Continue
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
+
+                            {step === 'confirm' && (
+                                <form onSubmit={handleFinalRegister} className="flex flex-col gap-4" style={CARD_STYLE}>
+                                    <h2 style={HEADING_STYLE}>Step 5 of 5: Confirm & Register</h2>
+
+                                    <div style={{ fontSize: '0.9375rem', color: '#333', lineHeight: 1.8 }}>
+                                        <div className="flex justify-between"><span className="font-semibold text-gray-600">Name</span><span>{bio.first_name} {bio.last_name}</span></div>
+                                        <div className="flex justify-between"><span className="font-semibold text-gray-600">Email</span><span>{bio.email}</span></div>
+                                        <div className="flex justify-between"><span className="font-semibold text-gray-600">Gender</span><span>{bio.gender}</span></div>
+                                        <div className="flex justify-between"><span className="font-semibold text-gray-600">Experience</span><span>{bio.experience_level}</span></div>
+                                        <div className="flex justify-between"><span className="font-semibold text-gray-600">Age Group</span><span>{details.age_group}</span></div>
+                                        <div className="flex justify-between"><span className="font-semibold text-gray-600">Events</span><span style={{ textAlign: 'right', maxWidth: '60%' }}>{selectedEvents.map((ev) => ev.name).join(', ')}</span></div>
+                                    </div>
+
+                                    {grandChampionOffered && (
+                                        <div className="flex flex-col gap-1">
+                                            <label className="flex items-center gap-2" style={{ fontSize: '14px', color: grandChampionEligible ? '#333' : '#999', cursor: grandChampionEligible ? 'pointer' : 'not-allowed' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={grandChampion}
+                                                    disabled={!grandChampionEligible}
+                                                    onChange={(e) => setGrandChampion(e.target.checked)}
+                                                />
+                                                Eligible for Grand Champion (+${grandChampionFee.toFixed(2)})
+                                            </label>
+                                            <span style={{ fontSize: '12px', color: '#666' }}>
+                                                Requires at least {GRAND_CHAMPION_MIN_EVENTS} events selected{!grandChampionEligible ? ` (you have ${selectedEventIds.length})` : ''}.
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    <div style={{ fontSize: '0.9375rem', color: '#333', lineHeight: 1.7 }}>
+                                        <div className="flex justify-between"><span>First Event ({isEarlyBird ? 'Early Bird' : 'Regular'})</span><span>${basePrice.toFixed(2)}</span></div>
+                                        {discount > 0 && (
+                                            <div className="flex justify-between"><span>Collegiate Discount</span><span>-${discount.toFixed(2)}</span></div>
+                                        )}
+                                        {!isEarlyBird && lateFee > 0 && (
+                                            <div className="flex justify-between"><span>Late Fee</span><span>+${lateFee.toFixed(2)}</span></div>
+                                        )}
+                                        <div className="flex justify-between"><span>Additional Events ({additionalEventsCount} &times; ${pricePerEvent.toFixed(2)})</span><span>${additionalEventsCost.toFixed(2)}</span></div>
+                                        {grandChampionCost > 0 && (
+                                            <div className="flex justify-between"><span>Grand Champion</span><span>${grandChampionCost.toFixed(2)}</span></div>
+                                        )}
+                                        <div className="flex justify-between font-bold border-t border-zinc-200 mt-2 pt-2"><span>Total</span><span>${estimatedTotal.toFixed(2)}</span></div>
                                     </div>
 
                                     <div className="flex justify-center py-2">
@@ -651,7 +971,7 @@ export default function Registration() {
                                     <div className="flex gap-3">
                                         <button
                                             type="button"
-                                            onClick={() => { setError(''); setStep('details'); }}
+                                            onClick={() => { setError(''); setStep('waiver'); }}
                                             style={{ background: '#fff', color: '#a12222', padding: '0.75rem', borderRadius: '6px', fontWeight: 600, border: '1px solid #a12222', cursor: 'pointer', flex: '0 0 auto' }}
                                         >
                                             Back
@@ -661,68 +981,78 @@ export default function Registration() {
                                             disabled={submitting}
                                             style={{ background: '#a12222', color: '#fff', padding: '0.75rem', borderRadius: '6px', fontWeight: 600, border: 'none', cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1, flex: '1 1 auto' }}
                                         >
-                                            {submitting ? 'Submitting...' : `Continue to Payment ($${estimatedTotal.toFixed(2)})`}
+                                            {submitting ? 'Registering...' : 'Register!'}
                                         </button>
                                     </div>
                                 </form>
                             )}
 
-                            {step === 'payment' && (
+                            {step === 'duplicate' && (
                                 <div className="flex flex-col gap-4" style={CARD_STYLE}>
-                                    <h2 style={HEADING_STYLE}>Step 4 of 4: Payment</h2>
-
-                                    <div style={{ fontSize: '0.9375rem', color: '#333', lineHeight: 1.7 }}>
-                                        <div className="flex justify-between"><span>Registration ({isEarlyBird ? 'Early Bird' : 'Regular'})</span><span>${baseCost.toFixed(2)}</span></div>
-                                        <div className="flex justify-between"><span>Events ({eventSelection.event_ids.length} &times; ${pricePerEvent.toFixed(2)})</span><span>${eventsCost.toFixed(2)}</span></div>
-                                        {discount > 0 && (
-                                            <div className="flex justify-between"><span>Collegiate Discount</span><span>-${discount.toFixed(2)}</span></div>
-                                        )}
-                                        <div className="flex justify-between font-bold border-t border-zinc-200 mt-2 pt-2"><span>Total</span><span>${estimatedTotal.toFixed(2)}</span></div>
-                                    </div>
-
-                                    <PayPalScriptProvider options={{ clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID, currency: 'USD' }}>
-                                        <PayPalButtons
-                                            style={{ layout: 'vertical' }}
-                                            createOrder={async () => {
-                                                try {
-                                                    const data = await api.post('/paypal/create-order', { registrationId });
-                                                    return data.orderID;
-                                                } catch (err) {
-                                                    setError(err.message || 'Could not start payment. Please try again.');
-                                                    throw err;
-                                                }
-                                            }}
-                                            onApprove={async (data) => {
-                                                try {
-                                                    const captureData = await api.post('/paypal/capture-order', {
-                                                        registrationId,
-                                                        orderID: data.orderID,
-                                                    });
-                                                    if (captureData?.status !== 'paid') {
-                                                        setError('Payment could not be confirmed. Please contact us if you were charged.');
-                                                        return;
-                                                    }
-                                                    setPaidAmount(estimatedTotal);
-                                                    setStep('success');
-                                                } catch (err) {
-                                                    setError(err.message || 'Payment could not be confirmed. Please contact us if you were charged.');
-                                                }
-                                            }}
-                                            onError={() => setError('There was a problem processing your payment. Please try again.')}
-                                        />
-                                    </PayPalScriptProvider>
-
-                                    <StatusBanner status={{ type: 'error', message: error }} />
+                                    <h2 style={HEADING_STYLE}>Already Registered</h2>
+                                    <p style={{ fontSize: '0.9375rem', color: '#333', lineHeight: 1.7 }}>
+                                        Our records indicate that you have registered already. If you are registering for an additional competitor,
+                                        please use the back button below to update your name and email address. Please allow up to 30 minutes to
+                                        receive a confirmation email for your registration. If you still have not received a confirmation email,
+                                        check your spam inbox or reach out via email for support. If you believe that you are receiving this message
+                                        in error, please reach out via. email and we will get you registered ASAP.
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={() => { setError(''); setStep('bio'); }}
+                                        style={{ background: '#fff', color: '#a12222', padding: '0.75rem', borderRadius: '6px', fontWeight: 600, border: '1px solid #a12222', cursor: 'pointer' }}
+                                    >
+                                        Back
+                                    </button>
                                 </div>
                             )}
 
-                            {step === 'success' && (
-                                <div className="flex flex-col gap-4 text-center" style={CARD_STYLE}>
-                                    <h2 style={HEADING_STYLE}>You're Registered!</h2>
+                            {step === 'success' && finalRegistration && (
+                                <div className="flex flex-col gap-4" style={CARD_STYLE}>
+                                    <h2 style={HEADING_STYLE}>Thank You!</h2>
                                     <p style={{ fontSize: '0.9375rem', color: '#333', lineHeight: 1.7 }}>
-                                        Thanks, {bio.first_name}! Your payment of ${paidAmount.toFixed(2)} was received and your registration for the University Wushu Games is complete.
+                                        Your registration has been saved. You should receive a confirmation email shortly at the address you provided.
                                     </p>
-                                    <Link to="/tournament" style={{ color: "#1A73E8", textDecoration: "underline" }}>Back to UWG</Link>
+
+                                    <div style={{ fontSize: '0.9375rem', color: '#333', lineHeight: 1.8 }}>
+                                        <div className="flex justify-between"><span className="font-semibold text-gray-600">Name</span><span>{finalRegistration.first_name} {finalRegistration.last_name}</span></div>
+                                        <div className="flex justify-between"><span className="font-semibold text-gray-600">Email</span><span>{finalRegistration.email}</span></div>
+                                        <div className="flex justify-between"><span className="font-semibold text-gray-600">Age Group</span><span>{finalRegistration.age_group}</span></div>
+                                        <div className="flex justify-between"><span className="font-semibold text-gray-600">Events</span><span style={{ textAlign: 'right', maxWidth: '60%' }}>{selectedEvents.map((ev) => ev.name).join(', ')}</span></div>
+                                        <div className="flex justify-between font-bold border-t border-zinc-200 mt-2 pt-2"><span>Amount Due</span><span>${Number(finalRegistration.amount_due).toFixed(2)}</span></div>
+                                    </div>
+
+                                    {finalRegistration.payment_status === 'paid' ? (
+                                        <div className="p-3 bg-emerald-50 text-emerald-800 rounded-lg text-center text-sm border border-emerald-200">
+                                            No payment needed - your registration is complete!
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div>
+                                                <strong style={{ fontSize: '0.9375rem' }}>Pay Now:</strong>
+                                                <p style={{ fontSize: '0.875rem', color: '#333', lineHeight: 1.6 }}>
+                                                    Scan the QR code to pay online now. You have the option to pay now with a PayPal account.
+                                                    Payments made online would allow competitors to check in online on competition day.
+                                                    <br></br> Note: you can also search TerpWushu@gmail.com on PayPal if the QR code is not working
+                                                </p>
+                                                <div
+                                                    className="flex items-center justify-center text-center text-xs text-gray-400 italic"
+                                                    style={{ border: '1px dashed #ccc', borderRadius: '8px', padding: '2rem', marginTop: '0.5rem' }}
+                                                >
+                                                    <img src="/uwg/paypalQR.jpg" alt="paypal"  />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <strong style={{ fontSize: '0.9375rem' }}>Pay Later:</strong>
+                                                <p style={{ fontSize: '0.875rem', color: '#333', lineHeight: 1.6 }}>
+                                                    If you prefer to pay in person, please present it when checking in on competition day. All payment
+                                                    methods (Cash, Credit/Debit Card, PayPal, Zelle) will be accepted on competition day.
+                                                </p>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    <Link to="/tournament" style={{ color: "#1A73E8", textDecoration: "underline", textAlign: 'center' }}>Back to UWG</Link>
                                 </div>
                             )}
                         </>

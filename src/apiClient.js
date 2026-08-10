@@ -12,7 +12,10 @@ async function request(path, options = {}) {
 
     if (!res.ok) {
         const message = (data && data.error) || `Request failed (${res.status})`;
-        throw new Error(message);
+        const error = new Error(message);
+        error.status = res.status;
+        error.data = data;
+        throw error;
     }
     return data;
 }
@@ -21,5 +24,6 @@ export const api = {
     get: (path) => request(path),
     post: (path, body) => request(path, { method: "POST", body: JSON.stringify(body) }),
     put: (path, body) => request(path, { method: "PUT", body: JSON.stringify(body) }),
+    patch: (path, body) => request(path, { method: "PATCH", body: JSON.stringify(body) }),
     delete: (path) => request(path, { method: "DELETE" }),
 };

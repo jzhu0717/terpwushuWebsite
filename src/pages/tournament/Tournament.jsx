@@ -153,6 +153,9 @@ export default function Tournament() {
 
     const basePrice = Number(settings?.early_reg_price || 0);
     const lateFee = Number(settings?.late_fee || 0);
+    const pricePerEvent = Number(settings?.price_per_event || 0);
+    const collegiateDiscount = Number(settings?.collegiate_discount || 0);
+    const collegiateFirstEventPrice = Math.max(0, basePrice - collegiateDiscount);
     const currentRegistrationCost = isEarlyBird ? basePrice : (basePrice + lateFee);
 
 	const isScheduleAvailable = settings?.doors_open || settings?.opening_ceremony || settings?.competition_begin;
@@ -384,19 +387,19 @@ export default function Tournament() {
                                                                     </div>
                                                                     <strong>Registration is open!</strong>
                                                                     {earlyEnds && (
-                                                                        <div>
+                                                                        <div className="text-center">
                                                                             <span className="font-bold text-gray-700">Early Registration Ends:</span>{' '}
                                                                             {earlyEnds.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
-                                                                            <br></br>
-                                                                            For collegiate competitors, the early registration fee is $50 for the first event.
-                                                                            For non-collegiate competitors, the early registration fee is $75 for the first event.
-                                                                            Each additional event costs $20
                                                                         </div>
                                                                     )}
                                                                     {lateEnds && (
-                                                                        <div>
+                                                                        <div className="text-center">
                                                                             <span className="font-bold text-gray-700">Regular Registration Deadline:</span>{' '}
                                                                             {lateEnds.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                                                                            <br></br>
+                                                                            For collegiate competitors, the early registration fee is ${collegiateFirstEventPrice} for the first event.{' '}
+                                                                            <br></br>For non-collegiate competitors, the early registration fee is ${basePrice} for the first event.{' '}
+                                                                            <br></br>Each additional event costs ${pricePerEvent}
                                                                         </div>
                                                                     )}
                                                                 </div>
@@ -404,7 +407,7 @@ export default function Tournament() {
                                                         </div>
                                                     </>
                                                 ) : (
-                                                    <p className="text-zinc-400 text-sm">Loading...</p>
+                                                    <p className="text-zinc-400 text-sm">Check back later</p>
                                                 )}
                                             </div>
                                         </>
