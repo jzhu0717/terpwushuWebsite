@@ -1,17 +1,14 @@
 # Terpwushu website
-This is the repository for Terpwushu club's website (updated 2026 by Josh Zhu). 
+This is the repository for the University of Maryland Terpwushu club website (updated August 2026 by Josh Zhu). 
 
-As of right now, almost everything is set up - I need to figure out hosting (trying to move to cloud hosting) and the UWG stuff. so basically most the backend work lmao.
+The sourcecode for the webpages are in /src. Images and some other files are in /public 
 
-The sourcecode for the webpages are in /src. Images and some pdf files are in /public 
-
-I will write more later. Trust, I will write a lot so that the documentation will be straightforward enough for future terpwushu ppl to (hopefully) understand what's going on.
-
-Below is the default readme for what it built the frontend with - react + vite.
+The site is now hosted via AWS s3, with AWS DynamoDB and Lambda for backend server (mostly for admin + UWG stuff). 
 
 To start frontend local dev: npm run dev
 
-To start backend PostgreSQL stuff: npx supabase start
+~~To start backend PostgreSQL stuff: npx supabase start~~
+I used PostgreSQL via supabase during local dev, all that has been migrated to AWS Cloud.
 
 # React + Vite
 
