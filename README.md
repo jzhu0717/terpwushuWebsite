@@ -11,7 +11,9 @@ Below is the default readme for what it built the frontend with - react + vite.
 
 To start frontend local dev: npm run dev
 
-To start backend PostgreSQL stuff: npx supabase start
+To start backend local dev: cd server && node local.js (needs server/.env populated — see server/.env.example)
+
+Backend is Node/Express on AWS Lambda via SAM (see template.yaml). To deploy: sam build && sam deploy --guided
 
 # React + Vite
 
