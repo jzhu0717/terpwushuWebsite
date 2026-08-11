@@ -1,0 +1,401 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: terpwushu — S3/CloudFront frontend, single Lambda API, DynamoDB tables
+
+Parameters:
+  JwtSecret:
+    Type: String
+    NoEcho: true
+    Description: Random secret used to sign admin session JWTs
+  EmailJsServiceId:
+    Type: String
+    NoEcho: true
+  EmailJsVerificationTemplateId:
+    Type: String
+    NoEcho: true
+  EmailJsPublicKey:
+    Type: String
+    NoEcho: true
+  EmailJsPrivateKey:
+    Type: String
+    NoEcho: true
+
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    MemorySize: 256
+    Timeout: 15
+
+Resources:
+  # ---------- Lambda + API Gateway ----------
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: server/
+      Handler: lambda.handler
+      Environment:
+        Variables:
+          JWT_SECRET: !Ref JwtSecret
+          COOKIE_SECURE: "true"
+          TABLE_ANNOUNCEMENTS: !Ref AnnouncementsTable
+          TABLE_OFFICERS: !Ref OfficersTable
+          TABLE_PRACTICES: !Ref PracticesTable
+          TABLE_TOURNAMENT_ARCHIVES: !Ref TournamentArchivesTable
+          TABLE_TOURNAMENT_WEBPAGE: !Ref TournamentWebpageTable
+          TABLE_EVENTS: !Ref EventsTable
+          TABLE_REGISTRATIONS: !Ref RegistrationsTable
+          TABLE_REGISTRATION_EVENTS: !Ref RegistrationEventsTable
+          TABLE_EMAIL_VERIFICATIONS: !Ref EmailVerificationsTable
+          TABLE_ADMIN_USERS: !Ref AdminUsersTable
+          TABLE_EVENT_ORDER: !Ref EventOrderTable
+          BUCKET_OFFICERS: !Ref OfficersBucket
+          BUCKET_ARCHIVES: !Ref ArchivesBucket
+          BUCKET_WAIVERS: !Ref WaiverBucket
+          EMAILJS_SERVICE_ID: !Ref EmailJsServiceId
+          EMAILJS_VERIFICATION_TEMPLATE_ID: !Ref EmailJsVerificationTemplateId
+          EMAILJS_PUBLIC_KEY: !Ref EmailJsPublicKey
+          EMAILJS_PRIVATE_KEY: !Ref EmailJsPrivateKey
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AnnouncementsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref OfficersTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PracticesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TournamentArchivesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TournamentWebpageTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref EventsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RegistrationsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RegistrationEventsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref EmailVerificationsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AdminUsersTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref EventOrderTable
+        - S3CrudPolicy:
+            BucketName: !Ref OfficersBucket
+        - S3CrudPolicy:
+            BucketName: !Ref ArchivesBucket
+        - S3CrudPolicy:
+            BucketName: !Ref WaiverBucket
+      Events:
+        ProxyRoute:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /{proxy+}
+            Method: ANY
+
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+
+  # ---------- DynamoDB tables ----------
+  AnnouncementsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+
+  OfficersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: year
+          AttributeType: S
+        - AttributeName: sort_order
+          AttributeType: N
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: year-index
+          KeySchema:
+            - AttributeName: year
+              KeyType: HASH
+            - AttributeName: sort_order
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+  PracticesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+
+  TournamentArchivesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: edition
+          AttributeType: S
+      KeySchema:
+        - AttributeName: edition
+          KeyType: HASH
+
+  TournamentWebpageTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+
+  EventsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+
+  RegistrationsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+
+  RegistrationEventsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: registration_id
+          AttributeType: S
+        - AttributeName: event_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: registration_id
+          KeyType: HASH
+        - AttributeName: event_id
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: event-index
+          KeySchema:
+            - AttributeName: event_id
+              KeyType: HASH
+            - AttributeName: registration_id
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+  EmailVerificationsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: email
+          AttributeType: S
+      KeySchema:
+        - AttributeName: email
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+
+  AdminUsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: username
+          AttributeType: S
+      KeySchema:
+        - AttributeName: username
+          KeyType: HASH
+
+  # Singleton item holding the admin's manual event-order arrangement (session/ring
+  # placement + competitor order per event block). Merged at read time with the live
+  # registration data, so new registrants automatically appear without losing existing
+  # manual ordering.
+  EventOrderTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+
+  # ---------- S3 buckets ----------
+  SiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  SiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref SiteBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub "${SiteBucket.Arn}/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${SiteDistribution}"
+
+  OfficersBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: false
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: false
+      CorsConfiguration:
+        CorsRules:
+          - AllowedMethods: [PUT, GET]
+            AllowedOrigins: ["*"]
+            AllowedHeaders: ["*"]
+
+  OfficersBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref OfficersBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal: "*"
+            Action: s3:GetObject
+            Resource: !Sub "${OfficersBucket.Arn}/*"
+
+  ArchivesBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: false
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: false
+      CorsConfiguration:
+        CorsRules:
+          - AllowedMethods: [PUT, GET]
+            AllowedOrigins: ["*"]
+            AllowedHeaders: ["*"]
+
+  ArchivesBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ArchivesBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal: "*"
+            Action: s3:GetObject
+            Resource: !Sub "${ArchivesBucket.Arn}/*"
+
+  # Signed waiver PDFs — private (contains registrant PII + legal consent), unlike the
+  # officers/archives buckets. Only reachable via admin-only presigned GET URLs.
+  WaiverBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # ---------- CloudFront ----------
+  SiteOAC:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub "${AWS::StackName}-site-oac"
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  SiteDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        DefaultRootObject: index.html
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+        Origins:
+          - Id: SiteOrigin
+            DomainName: !GetAtt SiteBucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt SiteOAC.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+          - Id: ApiOrigin
+            DomainName: !Sub "${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+            CustomOriginConfig:
+              OriginProtocolPolicy: https-only
+              OriginSSLProtocols:
+                - TLSv1.2
+        DefaultCacheBehavior:
+          TargetOriginId: SiteOrigin
+          ViewerProtocolPolicy: redirect-to-https
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6 # AWS managed: CachingOptimized
+        CacheBehaviors:
+          - PathPattern: /api/*
+            TargetOriginId: ApiOrigin
+            ViewerProtocolPolicy: https-only
+            AllowedMethods: [GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE]
+            CachedMethods: [GET, HEAD]
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad # AWS managed: CachingDisabled
+            OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac # AWS managed: AllViewerExceptHostHeader
+
+Outputs:
+  SiteBucketName:
+    Value: !Ref SiteBucket
+  DistributionId:
+    Value: !Ref SiteDistribution
+  SiteUrl:
+    Value: !Sub "https://${SiteDistribution.DomainName}"
+  ApiUrl:
+    Value: !Sub "https://${SiteDistribution.DomainName}/api"
+  OfficersBucketName:
+    Value: !Ref OfficersBucket
+  ArchivesBucketName:
+    Value: !Ref ArchivesBucket
+  WaiverBucketName:
+    Value: !Ref WaiverBucket
