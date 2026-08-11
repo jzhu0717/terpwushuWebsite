@@ -68,7 +68,11 @@ export default function AdminTournament() {
         collegiate_discount: '',
         price_per_event: '',
         grand_champion_enabled: false,
-        grand_champion_price: ''
+        grand_champion_price: '',
+        live_scoring_ring1_url: '',
+        live_scoring_ring2_url: '',
+        live_scoring_name_column: '',
+        live_scoring_score_column: ''
     });
   
     const [loading, setLoading] = useState(true);
@@ -274,7 +278,7 @@ export default function AdminTournament() {
                                     checked={!!form.grand_champion_enabled}
                                     onChange={handleCheckboxChange}
                                 />
-                                Enable Grand Champion eligibility during registration
+                                Enable Grand Champion eligibility during registration (eligibility: 4 events)
                             </label>
                             <div className="flex flex-col gap-1">
                                 <label className="text-xs text-gray-600">Grand Champion Fee ($)</label>
@@ -288,7 +292,6 @@ export default function AdminTournament() {
                                 />
                             </div>
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">Registrants need at least 4 events selected to be eligible.</p>
                     </div>
 
                     {/* Event Times / Schedule */}
@@ -343,6 +346,64 @@ export default function AdminTournament() {
                                 <label className="text-xs text-gray-600">Ring 2 URL</label>
                                 <input type="url" name="livestream_ring_2" value={form.livestream_ring_2} onChange={handleChange} className="p-2 border rounded text-sm" />
                             </div>
+                        </div>
+                    </div>
+
+                    {/* Live Scoring */}
+                    <div>
+                        <h3 className="text-sm font-bold text-red-800 uppercase tracking-wider mb-3">Live Scoring (Leave URLs blank to hide)</h3>
+                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 flex flex-col gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-xs text-gray-600">Ring 1 Sheet URL</label>
+                                    <input
+                                        type="url"
+                                        name="live_scoring_ring1_url"
+                                        value={form.live_scoring_ring1_url}
+                                        onChange={handleChange}
+                                        placeholder="https://docs.google.com/spreadsheets/d/.../edit"
+                                        className="p-2 border rounded text-sm w-full"
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-xs text-gray-600">Ring 2 Sheet URL</label>
+                                    <input
+                                        type="url"
+                                        name="live_scoring_ring2_url"
+                                        value={form.live_scoring_ring2_url}
+                                        onChange={handleChange}
+                                        placeholder="https://docs.google.com/spreadsheets/d/.../edit"
+                                        className="p-2 border rounded text-sm w-full"
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-xs text-gray-600">Name Column Header</label>
+                                    <input
+                                        type="text"
+                                        name="live_scoring_name_column"
+                                        value={form.live_scoring_name_column}
+                                        onChange={handleChange}
+                                        placeholder="e.g. Name"
+                                        className="p-2 border rounded text-sm w-full"
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-xs text-gray-600">Final Score Column Header</label>
+                                    <input
+                                        type="text"
+                                        name="live_scoring_score_column"
+                                        value={form.live_scoring_score_column}
+                                        onChange={handleChange}
+                                        placeholder="e.g. Final Score"
+                                        className="p-2 border rounded text-sm w-full"
+                                    />
+                                </div>
+                            </div>
+                            <p className="text-xs text-gray-500">
+                                In Google Sheet: Share → "Anyone with the link" can view → Copy link.
+                            </p>
                         </div>
                     </div>
 

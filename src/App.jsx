@@ -14,6 +14,7 @@ import EventOrder from './pages/tournament/EventOrder';
 // import TournamentSignup from './pages/TournamentSignup';
 // import NotFound from './pages/NotFound';
 import AdminGatekeeper from './pages/admin/AdminGatekeeper';
+import AdminEventOrderPrint from './pages/admin/AdminEventOrderPrint';
 
 function App() {
   return (
@@ -37,7 +38,9 @@ function App() {
           {/* Admin gate */}
           <Route path="/admin" element={<AdminGatekeeper />} />
         </Route>
-        
+
+        {/* Standalone (no navbar/footer) — meant to be printed directly */}
+        <Route path="/admin/event-order-print" element={<AdminEventOrderPrint />} />
       </Routes>
     </BrowserRouter>
   );
