@@ -57,17 +57,13 @@ async function loadPersistedScores(ring) {
   return Item?.scores || {};
 }
 
-// Accepts a normal Google Sheets share link (".../d/<ID>/edit?..." or similar) and returns
-// the URL for exporting the *whole* workbook — every tab — as one .xlsx file. Requires the
-// sheet's sharing set to "Anyone with the link" (Viewer is enough); no "Publish to web" step.
 function toXlsxExportUrl(shareUrl) {
   const match = String(shareUrl || "").match(/\/d\/([a-zA-Z0-9-_]+)/);
   if (!match) return null;
   return `https://docs.google.com/spreadsheets/d/${match[1]}/export?format=xlsx`;
 }
 
-// exceljs cell values can be a plain scalar, or (for formulas/rich text) an object — reduce
-// either down to plain text.
+
 function cellText(value) {
   if (value === null || value === undefined) return "";
   if (typeof value === "object") {
@@ -79,8 +75,6 @@ function cellText(value) {
   return String(value).trim();
 }
 
-// First row of a worksheet is headers; every row after that becomes an object keyed by
-// (lowercased, trimmed) header.
 function worksheetToObjects(worksheet) {
   const headers = [];
   worksheet.getRow(1).eachCell({ includeEmpty: true }, (cell, colNumber) => {
@@ -104,14 +98,6 @@ function worksheetToObjects(worksheet) {
   return rows;
 }
 
-// Fetches the ring's whole spreadsheet (every tab) and, for each tab, resolves it to a
-// specific event block by name, then matches each row within that tab to a competitor within
-// *that block's own roster* — scoping name-matching to the one event a tab represents, so the
-// same competitor appearing in several events only ever gets a score attached to the one a
-// given tab actually is, instead of bleeding into all of them. Newly-found scores are merged
-// into whatever was already persisted for this ring and never remove previously-seen entries,
-// so a transient empty/broken fetch can't wipe the board — worst case, that poll just doesn't
-// add anything new.
 async function refreshRingScores(ring, sheetUrl, columns, blocks) {
   const persisted = await loadPersistedScores(ring);
   if (!sheetUrl) return persisted;
@@ -173,9 +159,6 @@ async function refreshRingScores(ring, sheetUrl, columns, blocks) {
   return merged;
 }
 
-// Attaches persisted scores (keyed by registration id) onto each block's roster and returns
-// competitors ranked-and-sorted first (best score on top, ties grouped), followed by
-// everyone still unscored in their original competing order.
 function applyRingScores(blocks, scoresByBlockKey) {
   return blocks.map((block) => {
     const blockScores = scoresByBlockKey[block.key] || {};

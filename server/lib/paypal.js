@@ -1,6 +1,4 @@
-// Thin wrapper around PayPal's REST API (Orders v2) — no SDK dependency, just fetch. Uses
-// synchronous server-to-server calls only (create + capture); no webhook/IPN listener is
-// needed since the capture response itself is the authoritative proof of payment.
+// paypal api - new btw
 
 async function getAccessToken() {
   const clientId = process.env.PAYPAL_CLIENT_ID;

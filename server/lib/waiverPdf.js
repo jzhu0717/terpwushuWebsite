@@ -27,13 +27,6 @@ function formatDateTime(acceptedAt) {
   })} ET`;
 }
 
-// Generates a PDF record of the consent a registrant (or their parent/guardian, for minors)
-// gave — either digitally at self-service registration, or drawn on a signature pad during
-// in-person check-in (pass `signatureImage`, a PNG Buffer) — there's no scanned/uploaded
-// document otherwise, so this PDF *is* the durable record of what they agreed to and when.
-// Matches the University of Maryland Sport Clubs Release and Informed Consent Form / Parental
-// Release and Informed Consent Form wording exactly, one PDF per registration: the Parental
-// form for minors, the standard waiver otherwise.
 function generateWaiverPdf({ firstName, lastName, eventDate, isMinor, parentGuardianName, acceptedAt, signatureImage }) {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ margin: 54 });

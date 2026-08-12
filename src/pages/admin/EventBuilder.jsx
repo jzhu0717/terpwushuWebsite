@@ -228,10 +228,6 @@ export default function EventBuilder() {
     const handleIgnoreNamesBlur = () => {
         saveOrder(zones, ignoreHighlightNames);
     };
-
-    // One-click alternative to dragging a block across the whole page (e.g. morning to
-    // afternoon) — appends it to the end of the destination zone; a short in-zone drag can
-    // still fine-tune its position afterward.
     const moveBlockToZone = (blockKey, destZoneId) => {
         setZones((prevZones) => {
             const sourceZoneId = zoneIdOfBlock(prevZones, blockKey);
@@ -281,8 +277,7 @@ export default function EventBuilder() {
                     nextZones[destZoneId] = destBlocks;
                 }
             } else if (type === "competitor") {
-                // Competitors are scoped to their own block's SortableContext, so `over` is
-                // always within the same block — just reorder in place.
+     
                 const zoneId = Object.keys(prevZones).find((zid) =>
                     prevZones[zid].some((b) => b.competitors.some((c) => c.id === active.id))
                 );

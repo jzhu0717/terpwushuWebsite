@@ -6,9 +6,6 @@ const TH_STYLE = { padding: "0.5rem 0.75rem", whiteSpace: "nowrap" };
 const TD_STYLE = { padding: "0.5rem 0.75rem", whiteSpace: "nowrap" };
 const PICKER_STYLE = { maxHeight: "170px", overflowY: "auto", border: "1px solid #ddd", borderRadius: "6px", padding: "0.35rem 0.5rem", background: "#fff" };
 
-// Single-select field rendered as checkboxes (checking one unchecks the others) — matches
-// the requested "checkboxes to select the options" UI even for fields that only ever hold
-// one value.
 function SingleSelectCheckboxes({ options, value, onChange }) {
     return (
         <div style={PICKER_STYLE}>
@@ -69,11 +66,7 @@ const emptyNewCompetitor = () => ({
     event_ids: [],
 });
 
-// The event catalog reuses the same event names across multiple categories (e.g. "ChangQuan
-// (Longfist)" appears under Group A/B/C Compulsory *and* Contemporary Barehand) — a flat list
-// of names is ambiguous about which one you're actually toggling, so options are grouped
-// under their category as a heading. Relies on `options` already being sorted by sort_order
-// (as returned by GET /events) so same-category rows stay contiguous.
+
 function MultiSelectCheckboxes({ options, values, onToggle }) {
     let lastCategory;
     return (
@@ -215,9 +208,7 @@ export default function RegList() {
 
         const previousEvents = registration.events;
         const nextEvents = allEvents.filter((ev) => nextIds.includes(ev.id));
-        // Dropping below the Grand Champion event minimum invalidates an existing Grand
-        // Champion selection — clear it alongside the event change so the table never shows
-        // a Grand Champion entry that no longer qualifies.
+      
         const shouldClearGrandChampion = registration.grand_champion && nextIds.length < GRAND_CHAMPION_MIN_EVENTS;
         setRegistrations((rows) =>
             rows.map((r) =>

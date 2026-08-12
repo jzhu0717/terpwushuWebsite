@@ -24,8 +24,6 @@ async function presignDownload(bucket, key, filename) {
   return getSignedUrl(s3, command, { expiresIn: 300 });
 }
 
-// Lists every object under a prefix (paginating past S3's 1000-per-request cap, in case a
-// tournament ever has that many waiver files).
 async function listObjects(bucket, prefix) {
   const items = [];
   let continuationToken;
@@ -46,7 +44,6 @@ async function getObject(bucket, key) {
   return Buffer.concat(chunks);
 }
 
-// S3's DeleteObjects API takes at most 1000 keys per request.
 async function deleteObjects(bucket, keys) {
   for (let i = 0; i < keys.length; i += 1000) {
     const batch = keys.slice(i, i + 1000);

@@ -7,7 +7,7 @@ const { doc, TABLES } = require("../lib/dynamo");
 const { ScanCommand } = require("@aws-sdk/lib-dynamodb");
 
 const router = express.Router();
-router.use(requireAdmin); // Everything here is admin-only, no exceptions — no public routes on this router.
+router.use(requireAdmin); 
 
 const SNAPSHOT_PREFIX = "db-snapshots/";
 const WAIVER_ZIP_PREFIX = "waiver-exports/";
@@ -17,8 +17,6 @@ function sanitizeFileName(name) {
   return base || `uwg_export_${new Date().toISOString().replace(/[:.]/g, "-")}`;
 }
 
-// Full snapshot of just the tournament-cycle tables (Registrations, Registration-Events,
-// Event Order) — deliberately excludes anything that persists across years.
 router.post("/export", async (req, res) => {
   try {
     const fileName = `${sanitizeFileName(req.body?.fileName)}.json`;
@@ -70,10 +68,6 @@ router.get("/backups/:key/download", async (req, res) => {
   }
 });
 
-// Fully overwrites the tournament tables' current contents with a previously exported
-// snapshot — deletes everything currently in each table first, then restores the snapshot's
-// items. This is genuinely destructive; the frontend requires a typed confirmation before
-// ever calling this.
 router.post("/import", async (req, res) => {
   try {
     const fileName = req.body?.fileName;
@@ -98,9 +92,6 @@ router.post("/import", async (req, res) => {
   }
 });
 
-// Zips every waiver PDF currently in the Waivers bucket and stores the zip alongside the DB
-// snapshots, returning a presigned link to download it. Doesn't touch/clear anything itself —
-// use Delete Tables separately if you also want the waivers removed after exporting them.
 router.post("/export-waivers", async (req, res) => {
   try {
     const objects = await listObjects(process.env.BUCKET_WAIVERS, "");
@@ -134,9 +125,6 @@ router.post("/export-waivers", async (req, res) => {
   }
 });
 
-// Wipes the selected tournament-cycle tables/buckets entirely — for starting the next
-// tournament clean. Only ever touches the fixed TOURNAMENT_TABLES scope plus the waivers
-// bucket; nothing else on this server is reachable from here.
 router.post("/delete-tables", async (req, res) => {
   try {
     const selected = Array.isArray(req.body?.tables) ? req.body.tables : [];

@@ -77,7 +77,7 @@ export default function UWGCheckin() {
     const handleDropEvent = async (eventId) => {
         const nextIds = (selected.events || []).map((e) => e.id).filter((id) => id !== eventId);
         if (nextIds.length === 0) {
-            setError("Can't drop the last event — delete the registration from the Registrations tab instead if they're withdrawing entirely.");
+            setError("Can't drop the last event. Delete the registration from the Registrations tab instead if they're withdrawing entirely.");
             return;
         }
         setError("");
@@ -351,7 +351,7 @@ export default function UWGCheckin() {
                                 <div className="flex flex-col gap-3">
                                     <p className="text-sm text-gray-600">
                                         {isMinor
-                                            ? "This competitor is a minor — please have their parent/guardian read the Parental Release and Informed Consent Form and sign below."
+                                            ? "Please have parent/guardian read the Parental Release and Informed Consent Form and sign below."
                                             : "Please have the competitor read the Sport Clubs Release and Informed Consent Form and sign below."}
                                     </p>
 
@@ -383,7 +383,7 @@ export default function UWGCheckin() {
 
                                     <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer mt-1">
                                         <input type="checkbox" checked={false} disabled={busy} onChange={handleManualWaiverToggle} />
-                                        Waiver already received another way (paper on file, etc.) — mark received without a signature
+                                        Waiver already received another way (paper)
                                     </label>
                                 </div>
                             )}

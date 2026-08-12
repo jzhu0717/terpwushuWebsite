@@ -11,9 +11,7 @@ function randomCode() {
   return code;
 }
 
-// 26^6 (~309M) possibilities makes a collision astronomically unlikely at this app's scale,
-// but it's cheap to guard against anyway — regenerate on the rare hit rather than risk two
-// registrants sharing a self-service check-in code.
+
 async function generateUniqueCheckinCode() {
   for (let attempt = 0; attempt < 5; attempt++) {
     const code = randomCode();
@@ -29,8 +27,6 @@ async function generateUniqueCheckinCode() {
   throw new Error("Could not generate a unique check-in code");
 }
 
-// Shared by the public lookup/check-in routes and the PayPal routes — anything that needs to
-// resolve a registration from a self-service check-in code rather than its internal id.
 async function findRegistrationByCode(code) {
   const normalized = String(code || "").trim().toUpperCase();
   if (!normalized) return null;

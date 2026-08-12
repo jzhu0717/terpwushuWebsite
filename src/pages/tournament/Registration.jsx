@@ -13,10 +13,6 @@ const COMPULSORY_CATEGORY_INFO = {
     'Group A Compulsory': {
         titleLabel: '3rd Set of International Competition Routine',
         bodyLabel: '3rd Set of International Competition Routine Taolu',
-        // Prefixed onto the Barehand/Short Weapon/Long Weapon subcategory heading below, so
-        // it reads e.g. "International Taolu 3rd Set Compulsory Barehand" — the same event
-        // name (e.g. "ChangQuan (Longfist)") appears under Contemporary too, so the plain
-        // subcategory word alone was ambiguous about which section it belonged to.
         subcategoryPrefix: 'International Taolu 3rd Set Compulsory',
     },
     'Group B Compulsory': {
@@ -39,9 +35,6 @@ function isCategoryVisible(category, { isCollegiate, ageGroup, experienceLevel }
     return true;
 }
 
-// Kept in sync with server/lib/waiverPdf.js — this is the same text baked into the generated
-// waiver PDF, shown here so registrants (or their parent/guardian, for minors) read it before
-// consenting.
 const WAIVER_CLAUSES = [
     "I fully recognize and understand that there are risks and hazards, minor and serious, associated with participation in sport club events, ranging from scrapes, bruises, lacerations, broken bones to concussions, spinal cord injuries, paralysis and, even, death. These injuries may result from crashing with other participants, being hit by equipment, or environmental conditions.",
     "I understand that protective equipment, including but not limited to, headgear, pads, eyewear and mouthpieces may be recommended for the safety and protection of participants, and I agree to wear such equipment when participating in such activities. However, I understand that wearing such equipment will not eliminate the risks of participation.",
@@ -377,8 +370,6 @@ export default function Registration() {
                 pay_link: `${window.location.origin}/tournament/pay?code=${registration.checkin_code}`,
             }, publicKey);
         } catch (err) {
-            // Registration already succeeded server-side — a failed confirmation email
-            // shouldn't block the registrant from seeing their success page.
             console.error('Failed to send confirmation email:', err);
         }
     };
@@ -994,8 +985,7 @@ export default function Registration() {
                                         <div>
                                             <strong style={{ fontSize: '0.9375rem' }}>Pay Now:</strong>
                                             <p style={{ fontSize: '0.875rem', color: '#333', lineHeight: 1.6 }}>
-                                                Pay online now with PayPal. Once payment is confirmed, you'll receive your self-service check-in
-                                                code by email — use it on the Online Check-In page on competition day instead of waiting in line.
+                                                Pay online now with PayPal.
                                             </p>
                                             <div style={{ marginTop: '0.5rem' }}>
                                                 <PayPalPayment

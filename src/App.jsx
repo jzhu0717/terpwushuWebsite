@@ -12,9 +12,7 @@ import Registration from './pages/tournament/Registration';
 import EventOrder from './pages/tournament/EventOrder';
 import OnlineCheckin from './pages/tournament/OnlineCheckin';
 import Pay from './pages/tournament/Pay';
-// import TournamentDetails from './pages/TournamentDetails';
-// import TournamentSignup from './pages/TournamentSignup';
-// import NotFound from './pages/NotFound';
+import NotFound from './pages/NotFound';
 import AdminGatekeeper from './pages/admin/AdminGatekeeper';
 import AdminEventOrderPrint from './pages/admin/AdminEventOrderPrint';
 
@@ -38,12 +36,11 @@ function App() {
           <Route path="/tournament/online-checkin" element={<OnlineCheckin />} />
           <Route path="/tournament/pay" element={<Pay />} />
 
-          {/* <Route path="*" element={<NotFound />} /> */}
+          <Route path="*" element={<NotFound />} />
           {/* Admin gate */}
           <Route path="/admin" element={<AdminGatekeeper />} />
         </Route>
 
-        {/* Standalone (no navbar/footer) — meant to be printed directly */}
         <Route path="/admin/event-order-print" element={<AdminEventOrderPrint />} />
       </Routes>
     </BrowserRouter>

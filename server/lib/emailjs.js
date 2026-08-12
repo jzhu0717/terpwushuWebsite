@@ -1,6 +1,4 @@
-// Sends email via EmailJS's REST API from a server context (not a browser), which EmailJS
-// requires the account's Private Key ("accessToken") for — see EmailJS dashboard →
-// Account → Security → "Allow EmailJS API for non-browser applications".
+
 async function sendEmailJs(templateId, templateParams) {
   const serviceId = process.env.EMAILJS_SERVICE_ID;
   const publicKey = process.env.EMAILJS_PUBLIC_KEY;

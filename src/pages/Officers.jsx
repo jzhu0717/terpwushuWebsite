@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../apiClient';
 
-// "2011-2012" -> 2011, "2026" -> 2026 — used to sort both the flat officer list and the
-// grouped year keys below.
 const numericYearOf = (year) => (year.includes('-') ? parseInt(year.split('-')[0]) : parseInt(year));
 
 export default function Officers() {
@@ -103,11 +101,7 @@ export default function Officers() {
                 ) : Object.keys(groupedOfficers).length === 0 ? (
                     <p className="text-gray-700 italic">No historical officer records found.</p>
                 ) : (
-                    // Plain JS objects always iterate integer-like string keys ("2026", "2025", ...)
-                    // in ascending numeric order first, ignoring insertion order entirely — so
-                    // Object.keys() alone silently reorders single-year groups regardless of the
-                    // sort above. Sorting the keys explicitly here is what actually determines
-                    // the rendered order.
+     
                     Object.keys(groupedOfficers).sort((a, b) => numericYearOf(b) - numericYearOf(a)).map((yearKey) => (
                         <div key={yearKey} className="w-full flex flex-col items-center" style={{ gap: "1rem", marginBottom: "2rem" }}>
                             <p

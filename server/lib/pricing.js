@@ -1,10 +1,5 @@
 const FREE_REGISTRATION_INSTITUTION = "University of Maryland College Park";
 
-// Same formula the public registration form (Registration.jsx) uses: the first event's base
-// price (collegiate discount applied, late fee tacked on once early registration closes),
-// plus per-event pricing for every additional event — free for UMD collegiate competitors.
-// Returns the full breakdown (not just the total) so callers can persist/display it — e.g.
-// the Pay page shows registrants the same line-item breakdown they saw when registering.
 function computeAmountDue({ collegiateStatus, institution, eventCount, settings }) {
   const isCollegiate = collegiateStatus === "Collegiate";
   const isFreeUmd = isCollegiate && institution === FREE_REGISTRATION_INSTITUTION;

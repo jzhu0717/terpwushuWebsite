@@ -383,6 +383,13 @@ Resources:
       DistributionConfig:
         Enabled: true
         DefaultRootObject: index.html
+        Aliases:
+          - terpwushu.org
+          - www.terpwushu.org
+        ViewerCertificate:
+          AcmCertificateArn: arn:aws:acm:us-east-1:333679559963:certificate/71cb80f4-3936-4170-8658-24f3cb1ccfb4
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2021
         CustomErrorResponses:
           - ErrorCode: 403
             ResponseCode: 200

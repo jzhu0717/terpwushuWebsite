@@ -49,9 +49,6 @@ async function loadSavedOrder() {
   return Item || { sessions: EMPTY_SESSIONS(), competitorOrder: {}, ignoreHighlightNames: [] };
 }
 
-// Merges live buckets with the saved manual arrangement: existing bucket placements/order
-// are preserved, brand-new buckets get auto-placed by defaultSession (always Ring 1), and
-// buckets with no competitors left (e.g. after a registration edit/delete) are dropped.
 function mergeOrder(buckets, saved) {
   const savedSessions = saved.sessions || EMPTY_SESSIONS();
   const savedCompetitorOrder = saved.competitorOrder || {};
@@ -63,7 +60,7 @@ function mergeOrder(buckets, saved) {
       const keys = savedSessions[session]?.[ring] || [];
       for (const key of keys) {
         const bucket = buckets.get(key);
-        if (!bucket) continue; // stale — no competitors registered for it anymore
+        if (!bucket) continue; 
         placedKeys.add(key);
         const savedIds = savedCompetitorOrder[key] || [];
         const orderedIds = [
