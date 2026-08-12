@@ -3,6 +3,7 @@ import emailjs from '@emailjs/browser';
 import ReCAPTCHA from 'react-google-recaptcha';
 import { Link, useLocation } from "react-router-dom";
 import { api } from '../../apiClient';
+import { GRAND_CHAMPION_MIN_EVENTS } from '../../constants/registrationOptions';
 
 const renderPhotoLinks = (photosUrls) => {
     if (!photosUrls || photosUrls.length === 0) {
@@ -157,6 +158,7 @@ export default function Tournament() {
     const collegiateDiscount = Number(settings?.collegiate_discount || 0);
     const collegiateFirstEventPrice = Math.max(0, basePrice - collegiateDiscount);
     const currentRegistrationCost = isEarlyBird ? basePrice : (basePrice + lateFee);
+    const grandChampionFee = Number(settings?.grand_champion_price || 0);
 
 	const isScheduleAvailable = settings?.doors_open || settings?.opening_ceremony || settings?.competition_begin;
     const isLivestreamAvailable = settings?.livestream_ring_1 || settings?.livestream_ring_2;
@@ -372,7 +374,7 @@ export default function Tournament() {
                                                         <div className="mt-4">
                                                             {hasRegClosed ? (
                                                                 <div className="p-3 bg-zinc-100 text-zinc-500 rounded-lg text-center font-bold border border-zinc-200 text-sm">
-                                                                    Registration has passed
+                                                                    Registration is closed
                                                                 </div>
                                                             ) : !hasRegStarted ? (
                                                                 <div className="p-3 bg-amber-50 text-amber-800 rounded-lg text-center text-xs border border-amber-200">
@@ -400,6 +402,13 @@ export default function Tournament() {
                                                                             For collegiate competitors, the early registration fee is ${collegiateFirstEventPrice} for the first event.{' '}
                                                                             <br></br>For non-collegiate competitors, the early registration fee is ${basePrice} for the first event.{' '}
                                                                             <br></br>Each additional event costs ${pricePerEvent}
+                                                                        </div>
+                                                                    )}
+                                                                    {settings?.grand_champion_enabled && (
+                                                                        <div className="text-center">
+                                                                            <strong>Grand Champion</strong>
+                                                                            <br></br>Advanced competitors who compete in {GRAND_CHAMPION_MIN_EVENTS} or more events can enter to compete for Grand Champion in their age group.
+                                                                            <br></br>Entering for Grand Champion costs ${grandChampionFee}.
                                                                         </div>
                                                                     )}
                                                                 </div>

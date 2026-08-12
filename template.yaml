@@ -19,6 +19,19 @@ Parameters:
   EmailJsPrivateKey:
     Type: String
     NoEcho: true
+  EmailJsCheckinTemplateId:
+    Type: String
+    NoEcho: true
+  PayPalClientId:
+    Type: String
+    NoEcho: true
+  PayPalClientSecret:
+    Type: String
+    NoEcho: true
+  PayPalApiBase:
+    Type: String
+    Default: "https://api-m.sandbox.paypal.com"
+    Description: PayPal REST API base URL — sandbox by default; switch to https://api-m.paypal.com to go live
 
 Globals:
   Function:
@@ -55,6 +68,11 @@ Resources:
           EMAILJS_VERIFICATION_TEMPLATE_ID: !Ref EmailJsVerificationTemplateId
           EMAILJS_PUBLIC_KEY: !Ref EmailJsPublicKey
           EMAILJS_PRIVATE_KEY: !Ref EmailJsPrivateKey
+          EMAILJS_CHECKIN_TEMPLATE_ID: !Ref EmailJsCheckinTemplateId
+          PAYPAL_CLIENT_ID: !Ref PayPalClientId
+          PAYPAL_CLIENT_SECRET: !Ref PayPalClientSecret
+          PAYPAL_API_BASE: !Ref PayPalApiBase
+          BUCKET_BACKUPS: !Ref BackupBucket
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref AnnouncementsTable
@@ -84,6 +102,8 @@ Resources:
             BucketName: !Ref ArchivesBucket
         - S3CrudPolicy:
             BucketName: !Ref WaiverBucket
+        - S3CrudPolicy:
+            BucketName: !Ref BackupBucket
       Events:
         ProxyRoute:
           Type: HttpApi
@@ -328,6 +348,17 @@ Resources:
   # Signed waiver PDFs — private (contains registrant PII + legal consent), unlike the
   # officers/archives buckets. Only reachable via admin-only presigned GET URLs.
   WaiverBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # Database backup snapshots (JSON) + waiver zip exports — never public, downloaded only via
+  # presigned URLs, same access pattern as WaiverBucket.
+  BackupBucket:
     Type: AWS::S3::Bucket
     Properties:
       PublicAccessBlockConfiguration:

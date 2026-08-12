@@ -7,6 +7,7 @@ s3_prefix = "tw"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
 image_repositories = []
+parameter_overrides = "PayPalApiBase=\"https://api-m.sandbox.paypal.com\""
 
 [default.global.parameters]
 region = "us-east-1"

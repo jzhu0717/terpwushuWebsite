@@ -14,12 +14,20 @@ const SLIDESHOW_IMAGES = [
   "/homepage/andrew.jpg",
 ];
 
+const DAYS_ORDER = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
 export default function Home() {
+  const month = new Date().getMonth(); // 0 = Jan, 6 = July
+  const semester = month >= 6 ? "FALL" : "SPRING";
+  const year = new Date().getFullYear();
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [practices, setPractices] = useState([]);
+  const [loadingPractices, setLoadingPractices] = useState(true);
   const timeoutRef = useRef(null);
-  const location = useLocation(); 
+  const location = useLocation();
 
   useEffect(() => {
     const getLiveAnnouncements = async () => {
@@ -33,6 +41,28 @@ export default function Home() {
       }
     };
     getLiveAnnouncements();
+  }, []);
+
+  useEffect(() => {
+    async function fetchActivePractices() {
+      try {
+        setLoadingPractices(true);
+        const data = await api.get('/practices');
+
+        if (data) {
+          const sortedData = data.sort((a, b) =>
+            DAYS_ORDER.indexOf(a.day) - DAYS_ORDER.indexOf(b.day)
+          );
+          setPractices(sortedData);
+        }
+      } catch (err) {
+        console.error("Error loading practice schedule:", err);
+      } finally {
+        setLoadingPractices(false);
+      }
+    }
+
+    fetchActivePractices();
   }, []);
 
   useEffect(() => {
@@ -367,12 +397,6 @@ export default function Home() {
               </div>
             )}
           </div>
-
-
-
-
-
-
         </div>
 
         {/* Divider accent */}
@@ -384,6 +408,124 @@ export default function Home() {
             borderRadius: "2px",
           }}
         />
+
+        {/* Practice times & locations */}
+        <div
+          style={{
+            maxWidth: "680px",
+            width: "100%",
+            textAlign: "center",
+          }}
+        >
+          <strong>Practice Times and Locations - {semester} {year}</strong>
+
+          <table
+            style={{
+              marginTop: "1rem",
+              width: "100%",
+              maxWidth: "560px",
+              borderCollapse: "collapse",
+              fontSize: "0.95rem",
+              color: "#333",
+              marginInline: "auto"
+            }}
+          >
+            <thead>
+              <tr style={{ borderBottom: "2px solid #C0392B" }}>
+                <th style={{ textAlign: "center", padding: "0.5rem 0.75rem", color: "#7A1A1A" }}>Day</th>
+                <th style={{ textAlign: "center", padding: "0.5rem 0.75rem", color: "#7A1A1A" }}>Time</th>
+                <th style={{ textAlign: "center", padding: "0.5rem 0.75rem", color: "#7A1A1A" }}>Location</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loadingPractices ? (
+                <tr>
+                  <td colSpan="3" style={{ padding: "2rem", textAlign: "center", color: "#666" }}>
+                    Loading current practice schedule...
+                  </td>
+                </tr>
+              ) : practices.length === 0 ? (
+                <tr>
+                  <td colSpan="3" style={{ padding: "2rem", textAlign: "center", color: "#666", fontStyle: "italic" }}>
+                    No active practices scheduled right now.
+                  </td>
+                </tr>
+              ) : (
+                practices.map((row, i) => (
+                  <tr
+                    key={row.id || row.day}
+                    style={{
+                      borderBottom: "1px solid #E8C5C5",
+                      background: i % 2 === 1 ? "rgba(139, 26, 26, 0.04)" : "transparent",
+                    }}
+                  >
+                    <td style={{ padding: "0.5rem 0.75rem", fontWeight: 600 }}>{row.day}</td>
+                    <td style={{ padding: "0.5rem 0.75rem" }}>{row.time_range}</td>
+                    <td style={{ padding: "0.5rem 0.75rem" }}>{row.location}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "1.5rem",
+              justifyContent: "center",
+              marginTop: "1.5rem",
+              width: "100%",
+              maxWidth: "860px",
+              marginInline: "auto",
+            }}
+          >
+            <div style={{ flex: "1 1 320px", maxWidth: "400px", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
+              <span style={{ fontWeight: 700, color: "#7A1A1A", fontSize: "1rem" }}>
+                SPH
+              </span>
+              <iframe
+                title="SPH Location map"
+                src="https://maps.google.com/maps?q=School%20of%20Public%20Health%20UMD&t=&z=13&ie=UTF8&iwloc=&output=embed"
+                width="400"
+                height="300"
+                style={{ border: 0, borderRadius: "12px", width: "100%", maxWidth: "400px" }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+            <div style={{ flex: "1 1 320px", maxWidth: "400px", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
+              <span style={{ fontWeight: 700, color: "#7A1A1A", fontSize: "1rem" }}>
+                Golf Bubble
+              </span>
+              <iframe
+                title="Bubble Location map"
+                src="https://maps.google.com/maps?q=University%20of%20Maryland%20Golf%20Course&t=&z=13&ie=UTF8&iwloc=&output=embed"
+                width="400"
+                height="300"
+                style={{ border: 0, borderRadius: "12px", width: "100%", maxWidth: "400px" }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+          </div>
+
+          <div
+            style={{
+              fontSize: "1rem",
+              lineHeight: 1.75,
+              color: "#444",
+              maxWidth: "100%",
+              margin: "0 auto",
+              textAlign: "left",
+            }}
+          >
+            <br />
+            If you plan on driving to practice, we recommend parking in the Terrapin Trail Garage. Parking here is free after 4PM on weekdays and all-day on weekends.
+          </div>
+        </div>
 
         {/* About section */}
         <div

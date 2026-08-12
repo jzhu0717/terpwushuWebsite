@@ -1,4 +1,4 @@
-const { S3Client, PutObjectCommand, GetObjectCommand } = require("@aws-sdk/client-s3");
+const { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command, DeleteObjectsCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
 const s3 = new S3Client({});
@@ -24,4 +24,36 @@ async function presignDownload(bucket, key, filename) {
   return getSignedUrl(s3, command, { expiresIn: 300 });
 }
 
-module.exports = { presignUpload, uploadObject, presignDownload };
+// Lists every object under a prefix (paginating past S3's 1000-per-request cap, in case a
+// tournament ever has that many waiver files).
+async function listObjects(bucket, prefix) {
+  const items = [];
+  let continuationToken;
+  do {
+    const res = await s3.send(
+      new ListObjectsV2Command({ Bucket: bucket, Prefix: prefix, ContinuationToken: continuationToken })
+    );
+    items.push(...(res.Contents || []));
+    continuationToken = res.IsTruncated ? res.NextContinuationToken : undefined;
+  } while (continuationToken);
+  return items;
+}
+
+async function getObject(bucket, key) {
+  const res = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+  const chunks = [];
+  for await (const chunk of res.Body) chunks.push(chunk);
+  return Buffer.concat(chunks);
+}
+
+// S3's DeleteObjects API takes at most 1000 keys per request.
+async function deleteObjects(bucket, keys) {
+  for (let i = 0; i < keys.length; i += 1000) {
+    const batch = keys.slice(i, i + 1000);
+    await s3.send(
+      new DeleteObjectsCommand({ Bucket: bucket, Delete: { Objects: batch.map((Key) => ({ Key })) } })
+    );
+  }
+}
+
+module.exports = { presignUpload, uploadObject, presignDownload, listObjects, getObject, deleteObjects };

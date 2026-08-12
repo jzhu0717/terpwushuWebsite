@@ -7,6 +7,7 @@ import AdminTournamentArchives from './AdminTournamentArchives';
 import Registrations from './RegList';
 import EventOrder from './EventBuilder';
 import CheckIn from './UWGCheckin';
+import DatabaseAdmin from './DatabaseAdmin';
 import { api } from '../../apiClient';
 
 export default function AdminDashboard({ onLogout }) {
@@ -22,9 +23,12 @@ export default function AdminDashboard({ onLogout }) {
     const [uwgDropdownOpen, setUwgDropdownOpen] = useState(false);
 
     const uwgPages = [
+        { id: 'tournament', label: 'Edit Tournament Info' },
         { id: 'registration-list', label: 'Registrations' }, // Complete list of tournament registrations & event distributions, can add / edit competitors here too
-        { id: 'event-builder', label: 'EventOrder' }, // Event order builder, (group judging methods and shows ring conflicts)
+        { id: 'event-builder', label: 'EventOrder' }, // Event order builder
         { id: 'check-in', label: 'CheckIn' }, // Check in competitors at the check in table. Use during competiton day.
+        { id: 'tournament-archives', label: 'Edit Tournament Archives' },
+        { id: 'database-admin', label: 'Database Admin' },
         ];
 
     const isUwgActive = uwgPages.some(p => p.id === activeTab);
@@ -41,8 +45,7 @@ export default function AdminDashboard({ onLogout }) {
                 <nav className="mx-auto w-fit bg-[#611313] text-white py-2 px-6 flex items-center gap-6 rounded-full shadow-lg">
                     <button onClick={() => setActiveTab('announcements')} className={`text-sm transition-all ${activeTab === 'announcements' ? 'underline font-semibold text-red-200' : 'hover:text-red-200'}`}>Edit Announcements</button>
                     <button onClick={() => setActiveTab('practices')} className={`text-sm transition-all ${activeTab === 'practices' ? 'underline font-semibold text-red-200' : 'hover:text-red-200'}`}>Edit Practice Times</button>
-                    <button onClick={() => setActiveTab('officers')} className={`text-sm transition-all ${activeTab === 'officers' ? 'underline font-semibold text-red-200' : 'hover:text-red-200'}`}>Edit Officers</button>      
-                    <button onClick={() => setActiveTab('tournament')} className={`text-sm transition-all ${activeTab === 'tournament' ? 'underline font-semibold text-red-200' : 'hover:text-red-200'}`}>Edit Tournament</button>      
+                    <button onClick={() => setActiveTab('officers')} className={`text-sm transition-all ${activeTab === 'officers' ? 'underline font-semibold text-red-200' : 'hover:text-red-200'}`}>Edit Officers</button>
                     <div className="relative">
                         <button
                             onClick={() => setUwgDropdownOpen(!uwgDropdownOpen)}
@@ -78,8 +81,7 @@ export default function AdminDashboard({ onLogout }) {
                         )}
                     </div>
 
-                    <button onClick={() => setActiveTab('tournament-archives')} className={`text-sm transition-all ${activeTab === 'tournament-archives' ? 'underline font-semibold text-red-200' : 'hover:text-red-200'}`}>Edit Tournament Archives</button>      
-                    <button 
+                    <button
                         onClick={handleLogout}
                         style={{
                             marginLeft: "auto", // Pushes the logout button all the way to the right side
@@ -104,6 +106,7 @@ export default function AdminDashboard({ onLogout }) {
                 {activeTab === 'registration-list' && <Registrations />}
                 {activeTab === 'event-builder' && <EventOrder />}
                 {activeTab === 'check-in' && <CheckIn />}
+                {activeTab === 'database-admin' && <DatabaseAdmin />}
             </div>
         </div>
     );

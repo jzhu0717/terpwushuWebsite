@@ -13,6 +13,8 @@ const verifyRouter = require("./routes/verify");
 const uploadsRouter = require("./routes/uploads");
 const { router: eventOrderRouter } = require("./routes/eventOrder");
 const liveScoringRouter = require("./routes/liveScoring");
+const paypalRouter = require("./routes/paypal");
+const dbAdminRouter = require("./routes/dbAdmin");
 
 const app = express();
 
@@ -31,6 +33,8 @@ app.use("/api/verify", verifyRouter);
 app.use("/api/uploads", uploadsRouter);
 app.use("/api/event-order", eventOrderRouter);
 app.use("/api/live-scoring", liveScoringRouter);
+app.use("/api/paypal", paypalRouter);
+app.use("/api/db-admin", dbAdminRouter);
 
 app.use((err, _req, res, _next) => {
   console.error(err);

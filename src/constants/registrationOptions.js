@@ -70,3 +70,15 @@ export const ALL_AGE_GROUPS = [...new Set([...NON_COLLEGIATE_AGE_GROUPS, ...COLL
 export const ALL_INSTITUTIONS = [...new Set([...WUSHU_SCHOOLS, ...COLLEGES])];
 
 export const GRAND_CHAMPION_MIN_EVENTS = 4;
+
+// Age groups that represent a competitor under 18 — drives which waiver text applies and
+// whether a Parent/Guardian signature is required, both at registration and at check-in.
+export const MINOR_AGE_GROUPS = new Set([
+    "Child (Up to 6 Years Old)",
+    "Youth (Up to 8 Years Old)",
+    "Group C (Up to 11 Years Old)",
+    "Group B (Up to 14 Years Old)",
+    "Group A (Up to 17 Years Old)",
+]);
+
+export const PAYMENT_METHODS = ["Credit/Debit Card", "Check", "Cash", "PayPal", "Zelle", "Venmo"];

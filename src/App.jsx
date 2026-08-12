@@ -10,6 +10,8 @@ import Contact from './pages/Contact';
 import Tournament from './pages/tournament/Tournament';
 import Registration from './pages/tournament/Registration';
 import EventOrder from './pages/tournament/EventOrder';
+import OnlineCheckin from './pages/tournament/OnlineCheckin';
+import Pay from './pages/tournament/Pay';
 // import TournamentDetails from './pages/TournamentDetails';
 // import TournamentSignup from './pages/TournamentSignup';
 // import NotFound from './pages/NotFound';
@@ -33,6 +35,8 @@ function App() {
           <Route path="/tournament" element={<Tournament />} />
           <Route path="/tournament/registration" element={<Registration />} />
           <Route path="/tournament/event-order" element={<EventOrder />} />
+          <Route path="/tournament/online-checkin" element={<OnlineCheckin />} />
+          <Route path="/tournament/pay" element={<Pay />} />
 
           {/* <Route path="*" element={<NotFound />} /> */}
           {/* Admin gate */}

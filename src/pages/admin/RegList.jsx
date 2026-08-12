@@ -22,6 +22,41 @@ function SingleSelectCheckboxes({ options, value, onChange }) {
     );
 }
 
+// Column key -> comparable value extractor, used by the sortable table headers below.
+const SORT_VALUE_GETTERS = {
+    name: (r) => `${r.first_name} ${r.last_name}`.toLowerCase(),
+    email: (r) => String(r.email || "").toLowerCase(),
+    gender: (r) => String(r.gender || "").toLowerCase(),
+    experience_level: (r) => String(r.experience_level || "").toLowerCase(),
+    collegiate_status: (r) => String(r.collegiate_status || "").toLowerCase(),
+    age_group: (r) => String(r.age_group || "").toLowerCase(),
+    institution: (r) => String(r.institution || "").toLowerCase(),
+    events: (r) => (r.events || []).length,
+    amount_due: (r) => Number(r.amount_due ?? 0),
+    payment_status: (r) => String(r.payment_status || "").toLowerCase(),
+    checked_in: (r) => (r.checked_in ? 1 : 0),
+    waiver_received: (r) => (r.waiver_received ? 1 : 0),
+    grand_champion: (r) => (r.grand_champion ? 1 : 0),
+};
+
+function SortableHeader({ label, sortKey, sortConfig, onSort }) {
+    const active = sortConfig.key === sortKey;
+    const icon = active ? (sortConfig.direction === "asc" ? "↑" : "↓") : "⇕";
+    return (
+        <th style={TH_STYLE}>
+            <button
+                type="button"
+                onClick={() => onSort(sortKey)}
+                className="flex items-center gap-1 uppercase text-xs tracking-wider font-semibold text-gray-500 hover:text-gray-800"
+                style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
+            >
+                {label}
+                <span style={{ opacity: active ? 1 : 0.4 }}>{icon}</span>
+            </button>
+        </th>
+    );
+}
+
 const emptyNewCompetitor = () => ({
     first_name: "",
     last_name: "",
@@ -80,6 +115,7 @@ export default function RegList() {
     const [error, setError] = useState("");
     const [search, setSearch] = useState("");
     const [editingMode, setEditingMode] = useState(false);
+    const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
     const [newCompetitor, setNewCompetitor] = useState(emptyNewCompetitor);
     const [addingCompetitor, setAddingCompetitor] = useState(false);
 
@@ -111,12 +147,30 @@ export default function RegList() {
 
     const filteredRegistrations = useMemo(() => {
         const q = search.trim().toLowerCase();
-        if (!q) return registrations;
-        return registrations.filter((r) => {
-            const name = `${r.first_name} ${r.last_name}`.toLowerCase();
-            return name.includes(q) || String(r.email || "").toLowerCase().includes(q);
+        const filtered = !q
+            ? registrations
+            : registrations.filter((r) => {
+                  const name = `${r.first_name} ${r.last_name}`.toLowerCase();
+                  return name.includes(q) || String(r.email || "").toLowerCase().includes(q);
+              });
+
+        if (!sortConfig.key) return filtered;
+        const getValue = SORT_VALUE_GETTERS[sortConfig.key];
+        const dir = sortConfig.direction === "asc" ? 1 : -1;
+        return [...filtered].sort((a, b) => {
+            const va = getValue(a);
+            const vb = getValue(b);
+            if (va < vb) return -1 * dir;
+            if (va > vb) return 1 * dir;
+            return 0;
         });
-    }, [registrations, search]);
+    }, [registrations, search, sortConfig]);
+
+    const handleSort = (key) => {
+        setSortConfig((prev) =>
+            prev.key === key ? { key, direction: prev.direction === "asc" ? "desc" : "asc" } : { key, direction: "asc" }
+        );
+    };
 
     const toggleField = async (registration, field) => {
         const nextValue = !registration[field];
@@ -173,7 +227,10 @@ export default function RegList() {
             )
         );
         try {
-            await api.put(`/registrations/${registration.id}/events`, { event_ids: nextIds });
+            const { amount_due } = await api.put(`/registrations/${registration.id}/events`, { event_ids: nextIds });
+            setRegistrations((rows) =>
+                rows.map((r) => (r.id === registration.id ? { ...r, amount_due } : r))
+            );
             if (shouldClearGrandChampion) {
                 await api.patch(`/registrations/${registration.id}`, { grand_champion: false });
             }
@@ -307,20 +364,20 @@ export default function RegList() {
                         <table className="border-collapse text-left text-sm text-gray-700">
                             <thead>
                                 <tr className="border-b border-gray-200 text-gray-500 font-semibold uppercase text-xs tracking-wider">
-                                    <th style={TH_STYLE}>Name</th>
-                                    <th style={TH_STYLE}>Email</th>
-                                    <th style={TH_STYLE}>Gender</th>
-                                    <th style={TH_STYLE}>Experience</th>
-                                    <th style={TH_STYLE}>Status</th>
-                                    <th style={TH_STYLE}>Age Group</th>
-                                    <th style={TH_STYLE}>Institution</th>
-                                    <th style={TH_STYLE}>Events</th>
-                                    <th style={TH_STYLE}>Amount Due</th>
-                                    <th style={TH_STYLE}>Payment</th>
-                                    <th style={TH_STYLE}>Checked In</th>
-                                    <th style={TH_STYLE}>Waiver Received</th>
+                                    <SortableHeader label="Name" sortKey="name" sortConfig={sortConfig} onSort={handleSort} />
+                                    <SortableHeader label="Email" sortKey="email" sortConfig={sortConfig} onSort={handleSort} />
+                                    <SortableHeader label="Gender" sortKey="gender" sortConfig={sortConfig} onSort={handleSort} />
+                                    <SortableHeader label="Experience" sortKey="experience_level" sortConfig={sortConfig} onSort={handleSort} />
+                                    <SortableHeader label="Status" sortKey="collegiate_status" sortConfig={sortConfig} onSort={handleSort} />
+                                    <SortableHeader label="Age Group" sortKey="age_group" sortConfig={sortConfig} onSort={handleSort} />
+                                    <SortableHeader label="Institution" sortKey="institution" sortConfig={sortConfig} onSort={handleSort} />
+                                    <SortableHeader label="Events" sortKey="events" sortConfig={sortConfig} onSort={handleSort} />
+                                    <SortableHeader label="Amount Due" sortKey="amount_due" sortConfig={sortConfig} onSort={handleSort} />
+                                    <SortableHeader label="Payment" sortKey="payment_status" sortConfig={sortConfig} onSort={handleSort} />
+                                    <SortableHeader label="Checked In" sortKey="checked_in" sortConfig={sortConfig} onSort={handleSort} />
+                                    <SortableHeader label="Waiver Received" sortKey="waiver_received" sortConfig={sortConfig} onSort={handleSort} />
                                     <th style={TH_STYLE}>Signed Waiver</th>
-                                    <th style={TH_STYLE}>Grand Champion</th>
+                                    <SortableHeader label="Grand Champion" sortKey="grand_champion" sortConfig={sortConfig} onSort={handleSort} />
                                     <th style={TH_STYLE}></th>
                                 </tr>
                             </thead>
@@ -470,15 +527,22 @@ export default function RegList() {
 
                                             <td style={TD_STYLE}>${Number(r.amount_due ?? 0).toFixed(2)}</td>
                                             <td style={TD_STYLE}>
-                                                <span
-                                                    className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                                                        r.payment_status === "paid"
-                                                            ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                                                            : "bg-amber-50 text-amber-800 border border-amber-200"
-                                                    }`}
-                                                >
-                                                    {r.payment_status}
-                                                </span>
+                                                <label className="flex items-center gap-1.5 cursor-pointer">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={r.payment_status === "paid"}
+                                                        onChange={() => updateField(r, "payment_status", r.payment_status === "paid" ? "pending" : "paid")}
+                                                    />
+                                                    <span
+                                                        className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                                                            r.payment_status === "paid"
+                                                                ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                                                                : "bg-amber-50 text-amber-800 border border-amber-200"
+                                                        }`}
+                                                    >
+                                                        {r.payment_status}
+                                                    </span>
+                                                </label>
                                             </td>
                                             <td style={TD_STYLE} className="text-center">
                                                 <input

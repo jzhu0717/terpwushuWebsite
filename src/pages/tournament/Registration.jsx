@@ -3,17 +3,8 @@ import { Link } from "react-router-dom";
 import ReCAPTCHA from "react-google-recaptcha";
 import emailjs from "@emailjs/browser";
 import { api } from '../../apiClient';
-import { NON_COLLEGIATE_AGE_GROUPS, COLLEGIATE_AGE_GROUPS, WUSHU_SCHOOLS, COLLEGES, GRAND_CHAMPION_MIN_EVENTS } from '../../constants/registrationOptions';
-
-// Age groups that represent a competitor under 18 — drives the waiver's minor-vs-adult
-// consent text and whether the Parental/Guardian Consent Form is required.
-const MINOR_AGE_GROUPS = new Set([
-    "Child (Up to 6 Years Old)",
-    "Youth (Up to 8 Years Old)",
-    "Group C (Up to 11 Years Old)",
-    "Group B (Up to 14 Years Old)",
-    "Group A (Up to 17 Years Old)",
-]);
+import { NON_COLLEGIATE_AGE_GROUPS, COLLEGIATE_AGE_GROUPS, WUSHU_SCHOOLS, COLLEGES, GRAND_CHAMPION_MIN_EVENTS, MINOR_AGE_GROUPS } from '../../constants/registrationOptions';
+import PayPalPayment from '../../components/PayPalPayment';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const FREE_REGISTRATION_INSTITUTION = 'University of Maryland College Park';
@@ -22,14 +13,21 @@ const COMPULSORY_CATEGORY_INFO = {
     'Group A Compulsory': {
         titleLabel: '3rd Set of International Competition Routine',
         bodyLabel: '3rd Set of International Competition Routine Taolu',
+        // Prefixed onto the Barehand/Short Weapon/Long Weapon subcategory heading below, so
+        // it reads e.g. "International Taolu 3rd Set Compulsory Barehand" — the same event
+        // name (e.g. "ChangQuan (Longfist)") appears under Contemporary too, so the plain
+        // subcategory word alone was ambiguous about which section it belonged to.
+        subcategoryPrefix: 'International Taolu 3rd Set Compulsory',
     },
     'Group B Compulsory': {
         titleLabel: '1st Set of International Competition Routine',
         bodyLabel: '1st Set of International Competition Routine Taolu',
+        subcategoryPrefix: 'International Taolu 1st Set Compulsory',
     },
     'Group C Compulsory': {
         titleLabel: 'International Taolu 3rd Elementary Routine',
         bodyLabel: '3rd Elementary Routine Taolu',
+        subcategoryPrefix: 'International Taolu 3rd Elementary Routine',
     },
 };
 
@@ -41,15 +39,26 @@ function isCategoryVisible(category, { isCollegiate, ageGroup, experienceLevel }
     return true;
 }
 
-// Kept in sync with server/lib/waiverPdf.js — this is the same text baked into the
-// generated waiver PDF, shown here so registrants read it before consenting.
+// Kept in sync with server/lib/waiverPdf.js — this is the same text baked into the generated
+// waiver PDF, shown here so registrants (or their parent/guardian, for minors) read it before
+// consenting.
 const WAIVER_CLAUSES = [
     "I fully recognize and understand that there are risks and hazards, minor and serious, associated with participation in sport club events, ranging from scrapes, bruises, lacerations, broken bones to concussions, spinal cord injuries, paralysis and, even, death. These injuries may result from crashing with other participants, being hit by equipment, or environmental conditions.",
-    "Knowing the dangers, hazards and risks associated with Wushu, I voluntarily assume all responsibility and risk of loss, damage, illness and/or injury to my person or property in any way associated with my participation in such activities.",
-    "I understand that protective equipment including, but not limited to, shin, knee, and forearm pads, head gear and gloves is recommended for the safety and protection of participants in Wushu, and I agree to wear such equipment when participating in such activity that warrants this protective equipment. However, I understand that wearing such equipment will not eliminate the risks of participation.",
-    "I understand that the rules and regulations applicable to the Terp Wushu Club and the International Wushu Federation Society are designed, in part, for the safety and protection of participants and I agree to abide by those rules and regulations.",
-    "I understand that Wushu requires a minimum level of fitness for safe participation. I also understand that Campus Recreation Services advises that participants in sport club activities have a physical examination to determine their fitness for participation, and I represent that there are no physical or other health related reasons which would render my participation in sport club activities dangerous or otherwise harmful to the health or physical well-being of myself or others. I further understand that the University of Maryland does not provide medical, health or other insurance for participants in sport club activities.",
-    "To the fullest extent permitted by law, I hereby release and forever discharge, and agree to indemnify and hold harmless, the State of Maryland, the University of Maryland, Campus Recreation Services and their officers, agents and employees from and against any and all liabilities, claims, demands and causes of action on account of any loss or injury in any way arising out of or relating to my participation in or involvement with sport club activities, or use of CRS equipment and facilities including travel thereto and therefrom, whether due to the negligence, omission, default or other action of any person or entity.",
+    "I understand that protective equipment, including but not limited to, headgear, pads, eyewear and mouthpieces may be recommended for the safety and protection of participants, and I agree to wear such equipment when participating in such activities. However, I understand that wearing such equipment will not eliminate the risks of participation.",
+    "I understand that the rules and regulations of the national entity or governing body that sponsors my sport club are designed, in part, for the safety and protection of participants and I agree to abide by those rules and regulations.",
+    "I understand that sports require a minimum level of fitness for safe participation. I also understand that University Recreation & Wellness advises that participants in sport club activities have a physical examination to determine their fitness for participation and to carry personal health and accident insurance. I further understand that the University of Maryland does not provide medical, health or other insurance for participants in sport club activities.",
+    "In the event of a medical emergency, I hereby give my consent to emergency transportation and medical treatment arising out of or related to participation in the Event.",
+    "Knowing the dangers, hazards and risks associated with sport club activities, I voluntarily assume all responsibility and risk of loss, damage, illness and/or injury to my person or property in any way associated with my participation in the Event, including related travel.",
+    "To the fullest extent permitted by law, I hereby release and forever discharge, and agree to indemnify and hold harmless the State of Maryland, the University of Maryland, and their departments, officers, agents, employees, and volunteers (Released Parties) from and against any and all liabilities, claims, demands, causes of action, costs and expenses, (including attorneys' fees and related litigation costs) incurred by any of the Released Parties arising out of or relating to my participation in or involvement with the Event, or use of RecWell equipment and facilities, including travel thereto and therefrom, whether due to the negligence, default or other action or inaction of any person or entity, including the Released Parties.",
+];
+
+const PARENTAL_WAIVER_CLAUSES = [
+    "I understand that the University is not the sponsor of the Event, which is organized by the University of Maryland Wushu Club, an independent student organization. The University is not responsible for the Event, and it does not oversee, supervise or control Event activities.",
+    "I fully recognize and understand that there are risks and hazards, minor and serious, associated with participation in wushu, which include, but are not limited to: muscular strains, bruises, broken bones, dislocations, lacerations, concussions, head and eye injuries caused by approved equipment, paralysis; and which may also include other serious bodily injuries and, even, death.",
+    "Knowing the dangers, hazards and risks associated with wushu, I voluntarily assume all responsibility and risk of loss, damage, illness and/or injury to person or property that my child may, in any way, sustain in connection with his/her participation in such activities at the Event.",
+    "I understand that the rules and regulations applicable to wushu are designed, in part, for the safety and protection of participants and others, and I agree that my child must abide by those rules and regulations. I further understand that protective equipment is recommended for the safety and protection of participants in wushu, and I agree that my child must provide and wear such equipment when participating in such activities. However, I understand that such rules and regulations and wearing such equipment will not eliminate the risks of participation in wushu activities.",
+    "I understand that wushu requires a minimum level of experience and fitness for safe participation. I, on behalf of my minor child, also understand that the University advises that participants in Club Sport related activities have a physical examination to determine their fitness for participation. I further understand that the University of Maryland does not provide medical, health or other insurance for participants in the Event or other Club Sport related activities.",
+    "To the fullest extent permitted by law, I hereby release and forever discharge, and agree to indemnify and hold harmless, the State of Maryland, the University of Maryland, University Recreation & Wellness and their officers, agents, employees, students, and volunteers from and against any and all liabilities, claims, demands and causes of action on account of any loss or injury in any way arising out of or relating to my child's participation in or involvement with wushu activities during the Event, including the use of University equipment and facilities in connection therewith, whether due to the negligence, default or other action or inaction of any person or entity.",
 ];
 
 const CARD_STYLE = {
@@ -127,6 +136,7 @@ export default function Registration() {
     const [verifyingCode, setVerifyingCode] = useState(false);
 
     const [waiverAccepted, setWaiverAccepted] = useState(false);
+    const [parentGuardianName, setParentGuardianName] = useState('');
     const [grandChampion, setGrandChampion] = useState(false);
     const [finalRegistration, setFinalRegistration] = useState(null);
 
@@ -201,7 +211,7 @@ export default function Registration() {
     const selectedEventIds = eventSelection.event_ids.filter((id) => visibleEventIds.has(id));
     const selectedEvents = visibleEvents.filter((ev) => selectedEventIds.includes(ev.id));
 
-    const grandChampionEligible = selectedEventIds.length >= GRAND_CHAMPION_MIN_EVENTS;
+    const grandChampionEligible = selectedEventIds.length >= GRAND_CHAMPION_MIN_EVENTS && bio.experience_level === 'Advanced';
     const grandChampionOffered = !!settings?.grand_champion_enabled && !isFreeUmdRegistration;
 
     const discount = isCollegiate ? collegiateDiscount : 0;
@@ -338,6 +348,10 @@ export default function Registration() {
             setError('Please read and accept the terms and conditions in its entirety.');
             return;
         }
+        if (isMinor && !parentGuardianName.trim()) {
+            setError('Please enter the Parent/Guardian name.');
+            return;
+        }
         setError('');
         setStep('confirm');
     };
@@ -352,11 +366,15 @@ export default function Registration() {
                 to_email: registration.email,
                 to_name: `${registration.first_name} ${registration.last_name}`,
                 age_group: registration.age_group,
+                gender: registration.gender,
+                experience_level: registration.experience_level,
+                school: registration.institution,
                 events: selectedEvents.map((ev) => ev.name).join(', '),
                 amount_due: registration.amount_due.toFixed(2),
                 payment_status: registration.payment_status,
                 event_number: settings?.event_number || '',
                 uwg_day: settings?.uwg_day || '',
+                pay_link: `${window.location.origin}/tournament/pay?code=${registration.checkin_code}`,
             }, publicKey);
         } catch (err) {
             // Registration already succeeded server-side — a failed confirmation email
@@ -390,6 +408,7 @@ export default function Registration() {
                 event_ids: selectedEventIds,
                 waiver_accepted: true,
                 parental_consent_required: isMinor,
+                parent_guardian_name: isMinor ? parentGuardianName.trim() : undefined,
                 grand_champion: grandChampionOffered && grandChampion && grandChampionEligible,
             });
 
@@ -728,7 +747,9 @@ export default function Registration() {
                                                                 }, {})
                                                             ).map(([subcategory, subcategoryEvents]) => (
                                                                 <div key={subcategory} className="flex flex-col gap-1 mb-1">
-                                                                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#8B1A1A' }}>{subcategory}</span>
+                                                                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#8B1A1A' }}>
+                                                                        {compulsoryInfo ? `${compulsoryInfo.subcategoryPrefix} ${subcategory}` : subcategory}
+                                                                    </span>
                                                                     {subcategoryEvents.map((ev) => (
                                                                         <label key={ev.id} className="flex items-center gap-2 ml-2" style={{ fontSize: '15px', color: '#333', cursor: 'pointer' }}>
                                                                             <input
@@ -781,16 +802,22 @@ export default function Registration() {
 
                             {step === 'waiver' && (
                                 <form onSubmit={handleWaiverSubmit} className="flex flex-col gap-4" style={CARD_STYLE}>
-                                    <h2 style={HEADING_STYLE}>Step 4 of 5: {settings?.event_number} Annual Wushu Games Waiver</h2>
+                                    <h2 style={HEADING_STYLE}>
+                                        Step 4 of 5: {isMinor ? 'Parental Release and Informed Consent Form' : 'Sport Clubs Release and Informed Consent Form'}
+                                    </h2>
 
-                                    <p style={{ fontSize: '0.875rem', color: '#333', lineHeight: 1.7, textAlign: 'justify' }}>
-                                        I, <strong>{bio.first_name} {bio.last_name}</strong>, desire to participate in the {settings?.event_number} Annual University Wushu Games
-                                        {settings?.uwg_day ? ` on ${settings.uwg_day}` : ''}. In consideration of being permitted to participate in such sport club activities,
-                                        I, for myself, my heirs, personal representative(s) and assigns hereby represent and agree as follows:
-                                    </p>
+                                    {isMinor ? (
+                                        <p style={{ fontSize: '0.875rem', color: '#333', lineHeight: 1.7, textAlign: 'justify' }}>
+                                            I, on behalf of my minor child, <strong>{bio.first_name} {bio.last_name}</strong>, desire for my minor child to participate in Wushu activities during the University Wushu Games (the "Event"), to be held at the University of Maryland ("the University"){settings?.uwg_day ? ` on ${settings.uwg_day}` : ''}. In consideration of my child being permitted to participate in this activity, I, for and on behalf of my minor child and myself, our heirs, personal representative(s) and assigns, hereby represent and agree as follows:
+                                        </p>
+                                    ) : (
+                                        <p style={{ fontSize: '0.875rem', color: '#333', lineHeight: 1.7, textAlign: 'justify' }}>
+                                            I, <strong>{bio.first_name} {bio.last_name}</strong>, desire to participate in the University Wushu Games, hosted by Terp Wushu Club event{settings?.uwg_day ? ` on ${settings.uwg_day}` : ''} at University of Maryland, College Park. In consideration of being permitted to participate in such sport club activities, I, for myself, my heirs, personal representative(s) and assigns hereby represent and agree as follows:
+                                        </p>
+                                    )}
 
                                     <ol style={{ fontSize: '0.8125rem', color: '#333', lineHeight: 1.6, textAlign: 'justify', paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                        {WAIVER_CLAUSES.map((clause, i) => (
+                                        {(isMinor ? PARENTAL_WAIVER_CLAUSES : WAIVER_CLAUSES).map((clause, i) => (
                                             <li key={i}>{clause}</li>
                                         ))}
                                     </ol>
@@ -803,25 +830,23 @@ export default function Registration() {
                                             style={{ marginTop: '3px' }}
                                         />
                                         <span>
-                                            <strong>YES! </strong>
                                             {isMinor
-                                                ? 'I ACKNOWLEDGE THAT IF I AM UNDER 18 YEARS OF AGE, I MUST FILL OUT A WAIVER AND OBTAIN THE SIGNATURE OF MY PARENT/LEGAL GUARDIAN. OTHERWISE I AGREE TO FORFEIT MY POSITION IN THE COMPETITION.'
-                                                : 'I CERTIFY THAT I AM 18 YEARS OF AGE OR OLDER AND THAT I HAVE READ AND FULLY UNDERSTAND THIS RELEASE AND INFORMED CONSENT FORM AND I SIGN IT VOLUNTARILY WITH FULL KNOWLEDGE OF ITS SIGNIFICANCE.'}
+                                                ? 'I, THE PARENT/GUARDIAN CERTIFY THAT I AM 18 YEARS OF AGE OR OLDER AND THAT I HAVE READ AND FULLY UNDERSTAND THIS RELEASE AND INFORMED CONSENT FORM AND I SIGN IT VOLUNTARILY WITH FULL KNOWLEDGE OF ITS SIGNIFICANCE.'
+                                                : <><strong>YES! </strong>I CERTIFY THAT I AM 18 YEARS OF AGE OR OLDER AND THAT I HAVE READ AND FULLY UNDERSTAND THIS RELEASE AND INFORMED CONSENT FORM AND I SIGN IT VOLUNTARILY WITH FULL KNOWLEDGE OF ITS SIGNIFICANCE.</>}
                                         </span>
                                     </label>
 
-                                    {isMinor && waiverAccepted && (
-                                        <div className="p-3 bg-amber-50 text-amber-800 rounded-lg text-sm border border-amber-200">
-                                            Please also download, complete, and bring the{' '}
-                                            <a
-                                                href="/docs/Parental-Consent.pdf"
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                style={{ color: '#1A73E8', textDecoration: 'underline' }}
-                                            >
-                                                Parental/Guardian Consent Form
-                                            </a>{' '}
-                                            on competition day.
+                                    {isMinor && (
+                                        <div className="flex flex-col gap-1">
+                                            <label style={LABEL_STYLE}>Parent/Guardian Name (used as signature)</label>
+                                            <input
+                                                type="text"
+                                                value={parentGuardianName}
+                                                onChange={(e) => setParentGuardianName(e.target.value)}
+                                                placeholder="Full name"
+                                                style={INPUT_STYLE}
+                                                required
+                                            />
                                         </div>
                                     )}
 
@@ -870,7 +895,11 @@ export default function Registration() {
                                                 Eligible for Grand Champion (+${grandChampionFee.toFixed(2)})
                                             </label>
                                             <span style={{ fontSize: '12px', color: '#666' }}>
-                                                Requires at least {GRAND_CHAMPION_MIN_EVENTS} events selected{!grandChampionEligible ? ` (you have ${selectedEventIds.length})` : ''}.
+                                                Requires Advanced experience level and at least {GRAND_CHAMPION_MIN_EVENTS} events selected
+                                                {!grandChampionEligible
+                                                    ? ` (you have ${bio.experience_level || 'no'} experience level and ${selectedEventIds.length} event${selectedEventIds.length === 1 ? '' : 's'} selected)`
+                                                    : ''}
+                                                .
                                             </span>
                                         </div>
                                     )}
@@ -943,7 +972,8 @@ export default function Registration() {
                                 <div className="flex flex-col gap-4" style={CARD_STYLE}>
                                     <h2 style={HEADING_STYLE}>Thank You!</h2>
                                     <p style={{ fontSize: '0.9375rem', color: '#333', lineHeight: 1.7 }}>
-                                        Your registration has been saved. You should receive a confirmation email shortly at the address you provided.
+                                        Your registration has been saved. You should receive a confirmation email shortly at the address you provided. (check spam folders!)
+                                        <br></br> If you do not receive a confirmation email, please contact us at terpwushu@gmail.com
                                     </p>
 
                                     <div style={{ fontSize: '0.9375rem', color: '#333', lineHeight: 1.8 }}>
@@ -956,32 +986,24 @@ export default function Registration() {
 
                                     {finalRegistration.payment_status === 'paid' ? (
                                         <div className="p-3 bg-emerald-50 text-emerald-800 rounded-lg text-center text-sm border border-emerald-200">
-                                            No payment needed - your registration is complete!
+                                            {isFreeUmdRegistration
+                                                ? 'No payment needed - your registration is complete!'
+                                                : 'Payment received - your registration is complete! Check your email for your check-in code.'}
                                         </div>
                                     ) : (
-                                        <>
-                                            <div>
-                                                <strong style={{ fontSize: '0.9375rem' }}>Pay Now:</strong>
-                                                <p style={{ fontSize: '0.875rem', color: '#333', lineHeight: 1.6 }}>
-                                                    Scan the QR code to pay online now. You have the option to pay now with a PayPal account.
-                                                    Payments made online would allow competitors to check in online on competition day.
-                                                    <br></br> Note: you can also search TerpWushu@gmail.com on PayPal if the QR code is not working
-                                                </p>
-                                                <div
-                                                    className="flex items-center justify-center text-center text-xs text-gray-400 italic"
-                                                    style={{ border: '1px dashed #ccc', borderRadius: '8px', padding: '2rem', marginTop: '0.5rem' }}
-                                                >
-                                                    <img src="/uwg/paypalQR.jpg" alt="paypal"  />
-                                                </div>
+                                        <div>
+                                            <strong style={{ fontSize: '0.9375rem' }}>Pay Now:</strong>
+                                            <p style={{ fontSize: '0.875rem', color: '#333', lineHeight: 1.6 }}>
+                                                Pay online now with PayPal. Once payment is confirmed, you'll receive your self-service check-in
+                                                code by email — use it on the Online Check-In page on competition day instead of waiting in line.
+                                            </p>
+                                            <div style={{ marginTop: '0.5rem' }}>
+                                                <PayPalPayment
+                                                    code={finalRegistration.checkin_code}
+                                                    onPaid={() => setFinalRegistration((r) => ({ ...r, payment_status: 'paid' }))}
+                                                />
                                             </div>
-                                            <div>
-                                                <strong style={{ fontSize: '0.9375rem' }}>Pay Later:</strong>
-                                                <p style={{ fontSize: '0.875rem', color: '#333', lineHeight: 1.6 }}>
-                                                    If you prefer to pay in person, please present it when checking in on competition day. All payment
-                                                    methods (Cash, Credit/Debit Card, PayPal, Zelle) will be accepted on competition day.
-                                                </p>
-                                            </div>
-                                        </>
+                                        </div>
                                     )}
 
                                     <Link to="/tournament" style={{ color: "#1A73E8", textDecoration: "underline", textAlign: 'center' }}>Back to UWG</Link>
