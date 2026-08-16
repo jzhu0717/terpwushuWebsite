@@ -5,12 +5,29 @@ The sourcecode for the webpages are in /src. Images and some other files are in 
 
 The site is now hosted via AWS s3, with AWS DynamoDB and Lambda for backend server (mostly for admin + UWG stuff). 
 
+## To locally host:
+npm install
+
 To start frontend local dev: npm run dev
+To start backend local dev: 
+cd server 
+node local.js
 
-<<<<<<< HEAD
-To start backend local dev: cd server && node local.js (needs server/.env populated — see server/.env.example)
+Backend is Node/Express on AWS Lambda via SAM (see template.yaml). 
 
-Backend is Node/Express on AWS Lambda via SAM (see template.yaml). To deploy: sam build && sam deploy --guided
+## To deploy: 
+
+sam build 
+
+sam deploy --guided (guided flag is optional if no key additions were made)
+
+curl -sI https://d1m6pcmaolo3s4.cloudfront.net       
+
+aws s3 sync dist/ s3://tw-sitebucket-rvnfa8a62rdc --delete --region us-east-1 
+
+
+
+
 =======
 ~~To start backend PostgreSQL stuff: npx supabase start~~
 I used PostgreSQL via supabase during local dev, all that has been migrated to AWS Cloud.
