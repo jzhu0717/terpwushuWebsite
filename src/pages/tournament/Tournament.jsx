@@ -268,8 +268,8 @@ export default function Tournament() {
                     >
                         University Wushu Games
                     </h1>
-                    <div className="w-full pt-4 px-4"> 
-                        <nav className="mx-auto w-fit bg-[#611313] text-white py-2 px-6 flex items-center gap-6 rounded-full shadow-lg">
+                    <div className="w-full pt-4 px-4">
+                        <nav className="mx-auto w-fit max-w-full overflow-x-auto whitespace-nowrap bg-[#611313] text-white py-2 px-4 sm:px-6 flex items-center gap-3 sm:gap-6 rounded-full shadow-lg text-sm sm:text-base">
                             <Link to="#">Info</Link>
                             <Link to="#faq">FAQ</Link>
 							<Link to="#committee">Committee</Link>

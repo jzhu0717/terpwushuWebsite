@@ -78,18 +78,27 @@ function RadioGroup({ label, name, options, value, onChange }) {
         <div className="flex flex-col gap-1">
             <span style={LABEL_STYLE}>{label}</span>
             <div className="flex flex-wrap justify-center gap-4">
-                {options.map((opt) => (
-                    <label key={opt} className="flex items-center gap-2" style={{ fontSize: '15px', color: '#333', cursor: 'pointer' }}>
-                        <input
-                            type="radio"
-                            name={name}
-                            value={opt}
-                            checked={value === opt}
-                            onChange={onChange}
-                        />
-                        {opt}
-                    </label>
-                ))}
+                {options.map((opt) => {
+                    const optValue = typeof opt === 'string' ? opt : opt.value;
+                    const description = typeof opt === 'string' ? null : opt.description;
+                    return (
+                        <label key={optValue} className="flex items-center gap-2" style={{ fontSize: '15px', color: '#333', cursor: 'pointer' }}>
+                            <input
+                                type="radio"
+                                name={name}
+                                value={optValue}
+                                checked={value === optValue}
+                                onChange={onChange}
+                            />
+                            <span>
+                                {optValue}
+                                {description && (
+                                    <span style={{ fontSize: '12px', color: '#666', marginLeft: '4px' }}>({description})</span>
+                                )}
+                            </span>
+                        </label>
+                    );
+                })}
             </div>
         </div>
     );
@@ -478,6 +487,10 @@ export default function Registration() {
                         For collegiate competitors, the early registration fee is ${collegiateFirstEventPrice} for the first event.{' '}
                         <br></br>For non-collegiate competitors, the early registration fee is ${basePrice} for the first event.{' '}
                         <br></br>Each additional event costs ${pricePerEvent}
+                        <br></br>
+                        Refer to the <a href="/docs/CompetitionOverviewandGuidetoRegistration.pdf" target="_blank" rel="noopener noreferrer" style={{ color: "#1A73E8", textDecoration: "underline" }}>
+                            Competition Overview and Guide to Registration
+                        </a>
                     </div>
 
                 <div style={{ maxWidth: "560px", width: "100%" }}>
@@ -534,7 +547,17 @@ export default function Registration() {
                                     </div>
 
                                     <RadioGroup label="Gender" name="gender" value={bio.gender} onChange={handleBioChange} options={['M', 'F']} />
-                                    <RadioGroup label="Experience Level" name="experience_level" value={bio.experience_level} onChange={handleBioChange} options={['Beginner', 'Intermediate', 'Advanced']} />
+                                    <RadioGroup
+                                        label="Experience Level"
+                                        name="experience_level"
+                                        value={bio.experience_level}
+                                        onChange={handleBioChange}
+                                        options={[
+                                            { value: 'Beginner', description: '0-1 years experience' },
+                                            { value: 'Intermediate', description: '2-3 years experience' },
+                                            { value: 'Advanced', description: '3+ years experience' },
+                                        ]}
+                                    />
                                     <RadioGroup label="Collegiate Status" name="collegiate_status" value={bio.collegiate_status} onChange={handleBioChange} options={['Collegiate', 'Non-Collegiate']} />
 
                                     <StatusBanner status={{ type: 'error', message: error }} />
