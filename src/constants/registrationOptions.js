@@ -70,6 +70,7 @@ export const ALL_AGE_GROUPS = [...new Set([...NON_COLLEGIATE_AGE_GROUPS, ...COLL
 export const ALL_INSTITUTIONS = [...new Set([...WUSHU_SCHOOLS, ...COLLEGES])];
 
 export const GRAND_CHAMPION_MIN_EVENTS = 4;
+export const MAX_EVENTS_PER_REGISTRANT = 5;
 
 // Age groups that represent a competitor under 18 — drives which waiver text applies and
 // whether a Parent/Guardian signature is required, both at registration and at check-in.

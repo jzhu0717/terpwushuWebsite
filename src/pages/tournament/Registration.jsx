@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import ReCAPTCHA from "react-google-recaptcha";
 import emailjs from "@emailjs/browser";
 import { api } from '../../apiClient';
-import { NON_COLLEGIATE_AGE_GROUPS, COLLEGIATE_AGE_GROUPS, WUSHU_SCHOOLS, COLLEGES, GRAND_CHAMPION_MIN_EVENTS, MINOR_AGE_GROUPS } from '../../constants/registrationOptions';
+import { NON_COLLEGIATE_AGE_GROUPS, COLLEGIATE_AGE_GROUPS, WUSHU_SCHOOLS, COLLEGES, GRAND_CHAMPION_MIN_EVENTS, MAX_EVENTS_PER_REGISTRANT, MINOR_AGE_GROUPS } from '../../constants/registrationOptions';
 import PayPalPayment from '../../components/PayPalPayment';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -327,17 +327,25 @@ export default function Registration() {
     };
 
     const toggleEvent = (eventId) => {
-        setEventSelection((s) => ({
-            event_ids: s.event_ids.includes(eventId)
-                ? s.event_ids.filter((id) => id !== eventId)
-                : [...s.event_ids, eventId],
-        }));
+        setEventSelection((s) => {
+            if (s.event_ids.includes(eventId)) {
+                return { event_ids: s.event_ids.filter((id) => id !== eventId) };
+            }
+            if (s.event_ids.length >= MAX_EVENTS_PER_REGISTRANT) {
+                return s;
+            }
+            return { event_ids: [...s.event_ids, eventId] };
+        });
     };
 
     const handleEventsSubmit = (e) => {
         e.preventDefault();
         if (selectedEventIds.length === 0) {
             setError('Please select at least one event.');
+            return;
+        }
+        if (selectedEventIds.length > MAX_EVENTS_PER_REGISTRANT) {
+            setError(`You may only select up to ${MAX_EVENTS_PER_REGISTRANT} events.`);
             return;
         }
         setError('');
@@ -487,6 +495,7 @@ export default function Registration() {
                         For collegiate competitors, the early registration fee is ${collegiateFirstEventPrice} for the first event.{' '}
                         <br></br>For non-collegiate competitors, the early registration fee is ${basePrice} for the first event.{' '}
                         <br></br>Each additional event costs ${pricePerEvent}
+                        <br></br>Competitors may register for a maximum of 5 events
                         <br></br>
                         Refer to the <a href="/docs/CompetitionOverviewandGuidetoRegistration.pdf" target="_blank" rel="noopener noreferrer" style={{ color: "#1A73E8", textDecoration: "underline" }}>
                             Competition Overview and Guide to Registration
@@ -699,6 +708,9 @@ export default function Registration() {
                             {step === 'events' && (
                                 <form onSubmit={handleEventsSubmit} className="flex flex-col gap-4" style={CARD_STYLE}>
                                     <h2 style={HEADING_STYLE}>Step 3 of 5: Select Events</h2>
+                                    <p style={{ fontSize: '13px', color: '#666', marginTop: '-0.5rem' }}>
+                                        You may select up to {MAX_EVENTS_PER_REGISTRANT} events ({selectedEventIds.length}/{MAX_EVENTS_PER_REGISTRANT} selected)
+                                    </p>
 
                                     <div className="flex flex-col gap-2">
                                         {events.length === 0 ? (
@@ -764,29 +776,39 @@ export default function Registration() {
                                                                     <span style={{ fontSize: '12px', fontWeight: 700, color: '#8B1A1A' }}>
                                                                         {compulsoryInfo ? `${compulsoryInfo.subcategoryPrefix} ${subcategory}` : subcategory}
                                                                     </span>
-                                                                    {subcategoryEvents.map((ev) => (
-                                                                        <label key={ev.id} className="flex items-center gap-2 ml-2" style={{ fontSize: '15px', color: '#333', cursor: 'pointer' }}>
-                                                                            <input
-                                                                                type="checkbox"
-                                                                                checked={eventSelection.event_ids.includes(ev.id)}
-                                                                                onChange={() => toggleEvent(ev.id)}
-                                                                            />
-                                                                            {ev.name}
-                                                                        </label>
-                                                                    ))}
+                                                                    {subcategoryEvents.map((ev) => {
+                                                                        const isChecked = eventSelection.event_ids.includes(ev.id);
+                                                                        const isDisabled = !isChecked && selectedEventIds.length >= MAX_EVENTS_PER_REGISTRANT;
+                                                                        return (
+                                                                            <label key={ev.id} className="flex items-center gap-2 ml-2" style={{ fontSize: '15px', color: isDisabled ? '#aaa' : '#333', cursor: isDisabled ? 'not-allowed' : 'pointer' }}>
+                                                                                <input
+                                                                                    type="checkbox"
+                                                                                    checked={isChecked}
+                                                                                    onChange={() => toggleEvent(ev.id)}
+                                                                                    disabled={isDisabled}
+                                                                                />
+                                                                                {ev.name}
+                                                                            </label>
+                                                                        );
+                                                                    })}
                                                                 </div>
                                                             ))
                                                         ) : (
-                                                            categoryEvents.map((ev) => (
-                                                                <label key={ev.id} className="flex items-center gap-2" style={{ fontSize: '15px', color: '#333', cursor: 'pointer' }}>
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        checked={eventSelection.event_ids.includes(ev.id)}
-                                                                        onChange={() => toggleEvent(ev.id)}
-                                                                    />
-                                                                    {ev.name}
-                                                                </label>
-                                                            ))
+                                                            categoryEvents.map((ev) => {
+                                                                const isChecked = eventSelection.event_ids.includes(ev.id);
+                                                                const isDisabled = !isChecked && selectedEventIds.length >= MAX_EVENTS_PER_REGISTRANT;
+                                                                return (
+                                                                    <label key={ev.id} className="flex items-center gap-2" style={{ fontSize: '15px', color: isDisabled ? '#aaa' : '#333', cursor: isDisabled ? 'not-allowed' : 'pointer' }}>
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={isChecked}
+                                                                            onChange={() => toggleEvent(ev.id)}
+                                                                            disabled={isDisabled}
+                                                                        />
+                                                                        {ev.name}
+                                                                    </label>
+                                                                );
+                                                            })
                                                         )}
                                                     </div>
                                                 );
